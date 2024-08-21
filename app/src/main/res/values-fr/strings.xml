@@ -8,8 +8,8 @@
     <!-- Menu -->
     <string name="library">Bibliothèque</string>
     <string name="folders">Dossiers</string>
-    <string name="scan_media">Scanner les médias</string>
     <string name="reset_discography">Réanalyser la bibliothèque</string>
+    <string name="reset_discography_warning">Cette action va effacer et reconstruire la database interne de l\'application.\n\nAucune chanson ne sera supprimée pendant cette opération, mais cela va supprimer l\'historique de lecture.\n\nVous ne pourrez pas utiliser l\'application normalement pendant jusqu\'a la fin de l\'analyse, c’est-à-dire une durée potentiellement longue.</string>
     <string name="action_settings">"Paramètres"</string>
     <string name="action_about">À propos</string>
     <string name="no_albums">Aucun album</string>
@@ -33,6 +33,8 @@
     <string name="action_add_to_playing_queue">Ajouter à la file de lecture</string>
     <string name="action_remove_from_playing_queue">Retirer de la file de lecture</string>
     <string name="action_add_to_playlist">Ajouter à une playlist</string>
+    <string name="pref_title_enqueue_song_default_choice">Action par default après un appuis sur un titre</string>
+    <string name="action_always_ask_for_confirmation">Toujours demander la confirmation de l\'action</string>
     <string name="action_tag_editor">Éditeur d\'informations</string>
     <string name="action_delete_from_device">Supprimer de l\'appareil</string>
     <string name="action_details">Détails</string>
@@ -51,6 +53,9 @@
     <string name="action_shuffle_playlist">Lecture aléatoire des playlists</string>
     <string name="action_clear_playing_queue">Vider la file de lecture</string>
     <string name="action_save_playing_queue">Sauvegarder la file de lecture</string>
+    <string name="about_to_add_title_to_playing_queue">Vous allez ajouter 1 titre dans la liste de lecture.\nQue voulez faire avec ?</string>
+    <string name="about_to_add_x_titles_to_playing_queue">Vous allez ajouter %1$d titres dans la list de lecture.\nQue voulez faire avec ?</string>
+    <string name="failed_restore_playing_queue">Restoration impossible, la précedente file de lecture est corrompue</string>
     <string name="action_go_to_start_directory">Aller au répertoire de départ</string>
     <string name="action_show_lyrics">Afficher les paroles</string>
     <string name="action_sort_order">Ordre de tri</string>
@@ -78,13 +83,15 @@
     <string name="dialog_ringtone_title">Définir comme sonnerie</string>
     <!-- Audio file details labels -->
     <string name="label_details">Détails</string>
-    <string name="label_file_name">Nom du fichier</string>
     <string name="label_file_path">Chemin du fichier</string>
     <string name="label_file_size">Taille</string>
     <string name="label_file_format">Format</string>
     <string name="label_track_length">Durée</string>
     <string name="label_bit_rate">Débit</string>
     <string name="label_sampling_rate">Taux d\'échantillonnage</string>
+    <string name="label_replay_gain_peak">Pic ReplayGain</string>
+    <string name="label_date_added">Ajouté</string>
+    <string name="label_date_modified">Modifié</string>
     <string name="label_playing_queue">File de lecture</string>
     <!-- Library tabs -->
     <string name="albums">Albums</string>
@@ -157,6 +164,7 @@
     <string name="pref_playlist_disabled">Désactivé</string>
     <string name="pref_header_colors">Couleurs</string>
     <string name="pref_header_now_playing_screen">Lecture en cours</string>
+    <string name="pref_header_album">Album</string>
     <string name="pref_header_audio">Audio</string>
     <string name="pref_header_library">Bibliothèque</string>
     <string name="pref_header_images">Images</string>
@@ -167,12 +175,12 @@
     <string name="pref_title_navigation_bar">Barre de navigation colorée</string>
     <string name="pref_title_app_shortcuts">Raccourcis de l\'application colorés</string>
     <string name="pref_title_widget_background_transparent">Fond des widgets transparents</string>
-    <string name="pref_title_album_art_on_lockscreen">Afficher la pochette d\'album</string>
+<!--    <string name="pref_title_album_art_on_lockscreen">Afficher la pochette d\'album</string>-->
     <string name="pref_title_auto_download_metadata">Télécharger automatiquement les métadonnées</string>
-    <string name="pref_title_blurred_album_art">Pochette d\'album floue</string>
+<!--    <string name="pref_title_blurred_album_art">Pochette d\'album floue</string>-->
     <string name="pref_title_colored_notification">Notification colorée</string>
     <string name="pref_title_classic_notification">Style de notification classique</string>
-    <string name="pref_title_ignore_media_store_artwork">Ignorer le stockage des pochettes</string>
+<!--    <string name="pref_title_ignore_media_store_artwork">Ignorer le stockage des pochettes</string>-->
     <string name="pref_title_gapless_playback">Lecture sans coupure</string>
     <string name="pref_title_audio_ducking">Réduire le volume lorsque le focus est interrompu</string>
     <string name="pref_title_recently_played_interval">Intervalle de la playlist \"Joués récemment\"</string>
@@ -188,12 +196,12 @@
     <string name="pref_title_rg_source_mode">Mode ReplayGain source</string>
     <string name="pref_title_rg_preamp">Préamplificateur ReplayGain</string>
     <string name="pref_summary_rg_preamp">Fixer la préamplification quand ReplayGain est activé</string>
-    <string name="pref_summary_album_art_on_lockscreen">La pochette d\'album du titre actuel est utilisée comme fond d\'écran de verrouillage.</string>
-    <string name="pref_summary_blurred_album_art">Floute la pochette d\'album sur l\'écran de verrouillage. Peut causer des problèmes avec certaines applications et/ou widgets tiers.</string>
+<!--    <string name="pref_summary_album_art_on_lockscreen">La pochette d\'album du titre actuel est utilisée comme fond d\'écran de verrouillage.</string>-->
+<!--    <string name="pref_summary_blurred_album_art">Floute la pochette d\'album sur l\'écran de verrouillage. Peut causer des problèmes avec certaines applications et/ou widgets tiers.</string>-->
     <string name="pref_summary_classic_notification">Utiliser le style de notification classique</string>
     <string name="pref_summary_colored_notification">"Colore la notification en fonction de la pochette de l'album"</string>
     <string name="pref_summary_gapless_playback">"Peut causer des problèmes de lecture sur certains appareils"</string>
-    <string name="pref_summary_ignore_media_store_artwork">Peut augmenter la qualité des pochettes d\'albums, mais peut causer des temps de chargement plus longs. N\'activez cette option que si vous avez des problèmes de basse résolution des pochettes.</string>
+<!--    <string name="pref_summary_ignore_media_store_artwork">Peut augmenter la qualité des pochettes d\'albums, mais peut causer des temps de chargement plus longs. N\'activez cette option que si vous avez des problèmes de basse résolution des pochettes.</string>-->
     <string name="pref_summary_colored_navigation_bar">Colore la barre de navigation en fonction de la couleur principale</string>
     <string name="pref_summary_colored_app_shortcuts">Colore les raccourcis de l\'application selon la couleur principale</string>
     <string name="pref_summary_widget_background_transparent">Rend le fond des widgets transparent</string>
@@ -240,13 +248,14 @@
     <string name="accent_color_desc">La couleur secondaire du thème (rose par défaut)</string>
     <string name="playing_notification_description">La notification de lecture fournit des actions pour la lecture/pause, etc.</string>
     <string name="playing_notification_name">Notification de lecture</string>
+    <string name="idle_notification_description">La notification d\'inactivité est utilisé quand la file de lecture est vide</string>
+    <string name="idle_notification_name">Notification d\'inactivité</string>
+    <string name="idle_notification_title">Vinyl est en cours d\'éxecution</string>
     <!-- Storage scan -->
     <string name="some_files_are_not_listed_in_the_media_store">Certains fichiers ne sont pas listés dans le catalogue de médias</string>
     <string name="nothing_to_scan">Rien à analyser</string>
     <string name="scanned_files">%1$d fichier(s) scanné(s) sur %2$d</string>
     <string name="could_not_scan_files">Impossible de scanner %d fichier(s)</string>
-    <string name="scanning_x_songs_in_progress">Mise à jour de %1$d titre(s)…</string>
-    <string name="scanning_x_songs_finished">%1$d titre(s) mis à jour</string>
     <string name="listing_files">Liste des fichiers</string>
     <string name="new_start_directory">%s est le nouveau répertoire de départ</string>
     <string name="permissions_denied">Autorisations refusées</string>
@@ -290,6 +299,7 @@
     <string name="remove_cover">Supprimer la pochette</string>
     <!-- About -->
     <string name="special_thanks_to">Un grand merci à</string>
+    <string name="show_footer">afficher le pied de page</string>
     <string name="changelog">Historique des mises à jour</string>
     <string name="licenses">Licences</string>
     <string name="support_development">Faire un don</string>

@@ -5,16 +5,14 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
-import androidx.appcompat.widget.Toolbar;
 import androidx.loader.app.LoaderManager;
 import androidx.loader.content.Loader;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.afollestad.materialcab.MaterialCab;
 import com.h6ah4i.android.widget.advrecyclerview.utils.WrapperAdapterUtils;
 import com.kabouzeid.appthemehelper.ThemeStore;
 import com.kabouzeid.appthemehelper.util.ColorUtil;
@@ -23,34 +21,31 @@ import com.poupa.vinylmusicplayer.R;
 import com.poupa.vinylmusicplayer.adapter.song.SongAdapter;
 import com.poupa.vinylmusicplayer.databinding.ActivityGenreDetailBinding;
 import com.poupa.vinylmusicplayer.databinding.SlidingMusicPanelLayoutBinding;
+import com.poupa.vinylmusicplayer.dialogs.AddToPlaylistDialog;
 import com.poupa.vinylmusicplayer.helper.MusicPlayerRemote;
-import com.poupa.vinylmusicplayer.helper.menu.MenuHelper;
-import com.poupa.vinylmusicplayer.interfaces.CabHolder;
 import com.poupa.vinylmusicplayer.interfaces.LoaderIds;
+import com.poupa.vinylmusicplayer.interfaces.PaletteColorHolder;
 import com.poupa.vinylmusicplayer.loader.GenreLoader;
 import com.poupa.vinylmusicplayer.misc.WrappedAsyncTaskLoader;
 import com.poupa.vinylmusicplayer.model.Genre;
 import com.poupa.vinylmusicplayer.model.Song;
 import com.poupa.vinylmusicplayer.ui.activities.base.AbsSlidingMusicPanelActivity;
 import com.poupa.vinylmusicplayer.util.ViewUtil;
-import com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView;
 
 import java.util.ArrayList;
+import java.util.List;
 
-public class GenreDetailActivity extends AbsSlidingMusicPanelActivity implements CabHolder, LoaderManager.LoaderCallbacks<ArrayList<Song>> {
-
+public class GenreDetailActivity extends AbsSlidingMusicPanelActivity
+        implements LoaderManager.LoaderCallbacks<ArrayList<Song>>
+{
     private static final int LOADER_ID = LoaderIds.GENRE_DETAIL_ACTIVITY;
 
     public static final String EXTRA_GENRE = "extra_genre";
 
-    RecyclerView recyclerView;
-    Toolbar toolbar;
-    TextView empty;
-    TextView titleTextView;
+    private ActivityGenreDetailBinding layoutBinding;
 
     private Genre genre;
 
-    private MaterialCab cab;
     private SongAdapter adapter;
 
     private RecyclerView.Adapter wrappedAdapter;
@@ -76,25 +71,24 @@ public class GenreDetailActivity extends AbsSlidingMusicPanelActivity implements
     @Override
     protected View createContentView() {
         SlidingMusicPanelLayoutBinding slidingPanelBinding = createSlidingMusicPanel();
-        ActivityGenreDetailBinding binding = ActivityGenreDetailBinding.inflate(
+        layoutBinding = ActivityGenreDetailBinding.inflate(
                 getLayoutInflater(),
                 slidingPanelBinding.contentContainer,
                 true);
-
-        recyclerView = binding.recyclerView;
-        toolbar = binding.toolbar;
-        empty = binding.empty;
-        titleTextView = binding.title;
 
         return slidingPanelBinding.getRoot();
     }
 
     private void setUpRecyclerView() {
-        ViewUtil.setUpFastScrollRecyclerViewColor(this, ((FastScrollRecyclerView) recyclerView), ThemeStore.accentColor(this));
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        ViewUtil.setUpFastScrollRecyclerViewColor(this, layoutBinding.recyclerView, ThemeStore.accentColor(this));
+        layoutBinding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        adapter = new SongAdapter(this, new ArrayList<>(), R.layout.item_list, false, this);
-        recyclerView.setAdapter(adapter);
+        adapter = new SongAdapter(this, new ArrayList<>(), R.layout.item_list, false, new PaletteColorHolder() {
+            @Override
+            @ColorInt
+            public int getPaletteColor() {return ThemeStore.primaryColor(GenreDetailActivity.this);}
+        });
+        layoutBinding.recyclerView.setAdapter(adapter);
 
         adapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
             @Override
@@ -106,14 +100,12 @@ public class GenreDetailActivity extends AbsSlidingMusicPanelActivity implements
     }
 
     private void setUpToolBar() {
-        toolbar.setBackgroundColor(ThemeStore.primaryColor(this));
-        setSupportActionBar(toolbar);
-        //noinspection ConstantConditions
+        layoutBinding.toolbar.setBackgroundColor(ThemeStore.primaryColor(this));
+        setSupportActionBar(layoutBinding.toolbar);
         getSupportActionBar().setTitle(null);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        titleTextView.setText(genre.getName());
-
-        titleTextView.setTextColor(MaterialValueHelper.getPrimaryTextColor(this, ColorUtil.isColorLight(ThemeStore.primaryColor(this))));
+        layoutBinding.title.setText(genre.getName());
+        layoutBinding.title.setTextColor(MaterialValueHelper.getPrimaryTextColor(this, ColorUtil.isColorLight(ThemeStore.primaryColor(this))));
     }
 
     @Override
@@ -125,8 +117,18 @@ public class GenreDetailActivity extends AbsSlidingMusicPanelActivity implements
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         final int id = item.getItemId();
-        if (id == R.id.action_shuffle_genre) {
-            MusicPlayerRemote.openAndShuffleQueue(adapter.getDataSet(), true);
+        final List<? extends Song> songs = adapter.getDataSet();
+        if (id == R.id.action_add_to_current_playing) {
+            MusicPlayerRemote.enqueue(songs);
+            return true;
+        } else if (id == R.id.action_add_to_playlist) {
+            AddToPlaylistDialog.create(songs).show(getSupportFragmentManager(), "ADD_PLAYLIST");
+            return true;
+        } else if (id == R.id.action_play_next) {
+            MusicPlayerRemote.playNext(songs);
+            return true;
+        } else if (id == R.id.action_shuffle_genre) {
+            MusicPlayerRemote.openAndShuffleQueue(songs, true);
             return true;
         } else if (id == android.R.id.home) {
             onBackPressed();
@@ -135,26 +137,10 @@ public class GenreDetailActivity extends AbsSlidingMusicPanelActivity implements
         return super.onOptionsItemSelected(item);
     }
 
-    @NonNull
-    @Override
-    public MaterialCab openCab(final int menu, final MaterialCab.Callback callback) {
-        if (cab != null && cab.isActive()) cab.finish();
-        adapter.setColor(ThemeStore.primaryColor(this));
-        cab = MenuHelper.setOverflowMenu(this, menu, ThemeStore.primaryColor(this))
-                .start(callback);
-
-        MenuHelper.decorateDestructiveItems(cab.getMenu(), this);
-
-        return cab;
-    }
-
     @Override
     public void onBackPressed() {
-        if (cab != null && cab.isActive()) cab.finish();
-        else {
-            recyclerView.stopScroll();
-            super.onBackPressed();
-        }
+        layoutBinding.recyclerView.stopScroll();
+        super.onBackPressed();
     }
 
     @Override
@@ -173,18 +159,15 @@ public class GenreDetailActivity extends AbsSlidingMusicPanelActivity implements
         adapter.notifyDataSetChanged();
     }
 
-    private void checkIsEmpty() {
-        empty.setVisibility(
+    void checkIsEmpty() {
+        layoutBinding.empty.setVisibility(
                 adapter.getItemCount() == 0 ? View.VISIBLE : View.GONE
         );
     }
 
     @Override
     protected void onDestroy() {
-        if (recyclerView != null) {
-            recyclerView.setAdapter(null);
-            recyclerView = null;
-        }
+        layoutBinding.recyclerView.setAdapter(null);
 
         if (wrappedAdapter != null) {
             WrapperAdapterUtils.releaseAll(wrappedAdapter);

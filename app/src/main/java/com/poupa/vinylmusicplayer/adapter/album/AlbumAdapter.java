@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 
 import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
@@ -12,7 +13,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.util.Pair;
 
-import com.kabouzeid.appthemehelper.ThemeStore;
 import com.kabouzeid.appthemehelper.util.ColorUtil;
 import com.kabouzeid.appthemehelper.util.MaterialValueHelper;
 import com.poupa.vinylmusicplayer.R;
@@ -21,15 +21,17 @@ import com.poupa.vinylmusicplayer.adapter.base.MediaEntryViewHolder;
 import com.poupa.vinylmusicplayer.databinding.ItemGridBinding;
 import com.poupa.vinylmusicplayer.databinding.ItemGridCardHorizontalBinding;
 import com.poupa.vinylmusicplayer.databinding.ItemListBinding;
+import com.poupa.vinylmusicplayer.discog.tagging.MultiValuesTagUtil;
 import com.poupa.vinylmusicplayer.glide.GlideApp;
 import com.poupa.vinylmusicplayer.glide.VinylColoredTarget;
 import com.poupa.vinylmusicplayer.glide.VinylGlideExtension;
 import com.poupa.vinylmusicplayer.helper.menu.SongsMenuHelper;
-import com.poupa.vinylmusicplayer.interfaces.CabHolder;
+import com.poupa.vinylmusicplayer.interfaces.PaletteColorHolder;
 import com.poupa.vinylmusicplayer.model.Album;
 import com.poupa.vinylmusicplayer.model.Song;
 import com.poupa.vinylmusicplayer.sort.AlbumSortOrder;
 import com.poupa.vinylmusicplayer.sort.SortOrder;
+import com.poupa.vinylmusicplayer.ui.activities.base.AbsThemeActivity;
 import com.poupa.vinylmusicplayer.util.ImageTheme.ThemeStyleUtil;
 import com.poupa.vinylmusicplayer.util.MusicUtil;
 import com.poupa.vinylmusicplayer.util.NavigationUtil;
@@ -37,7 +39,8 @@ import com.poupa.vinylmusicplayer.util.PreferenceUtil;
 import com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * @author Karim Abou Zeid (kabouzeid)
@@ -49,16 +52,29 @@ public class AlbumAdapter extends AbsMultiSelectAdapter<AlbumAdapter.ViewHolder,
 
     protected final int itemLayoutRes;
 
+    protected boolean showFooter;
+
     protected boolean usePalette;
 
-    public AlbumAdapter(@NonNull AppCompatActivity activity, ArrayList<Album> dataSet, @LayoutRes int itemLayoutRes, boolean usePalette, @Nullable CabHolder cabHolder) {
-        super(activity, cabHolder, R.menu.menu_media_selection);
+    public AlbumAdapter(@NonNull final AbsThemeActivity activity, ArrayList<Album> dataSet, @LayoutRes int itemLayoutRes,
+                        boolean showFooter, boolean usePalette, @Nullable PaletteColorHolder palette) {
+        super(activity, palette, R.menu.menu_media_selection);
         this.activity = activity;
         this.dataSet = dataSet;
         this.itemLayoutRes = itemLayoutRes;
+        this.showFooter = showFooter;
         this.usePalette = usePalette;
 
         setHasStableIds(true);
+    }
+
+    public void setShowFooter(boolean showFooter) {
+        this.showFooter = showFooter;
+        View actionColoredFooters = activity.findViewById(R.id.action_colored_footers);
+        if (actionColoredFooters != null) {
+            actionColoredFooters.setEnabled(showFooter);
+        }
+        notifyDataSetChanged();
     }
 
     public void usePalette(boolean usePalette) {
@@ -92,13 +108,15 @@ public class AlbumAdapter extends AbsMultiSelectAdapter<AlbumAdapter.ViewHolder,
         }
     }
 
-    protected String getAlbumTitle(Album album) {
+    @NonNull
+    private static String getAlbumTitle(@NonNull final Album album) {
         return album.getTitle();
     }
 
-    protected String getAlbumText(Album album) {
+    @NonNull
+    protected String getAlbumText(@NonNull final Album album) {
         return MusicUtil.buildInfoString(
-                album.getArtistName(),
+                MultiValuesTagUtil.infoStringAsArtists(album.getArtistNames()),
                 MusicUtil.getSongCountString(activity, album.songs.size())
         );
     }
@@ -107,8 +125,7 @@ public class AlbumAdapter extends AbsMultiSelectAdapter<AlbumAdapter.ViewHolder,
     public void onBindViewHolder(@NonNull final ViewHolder holder, int position) {
         final Album album = dataSet.get(position);
 
-        final boolean isChecked = isChecked(album);
-        holder.itemView.setActivated(isChecked);
+        holder.itemView.setActivated(isChecked(position));
 
         if (holder.shortSeparator != null) {
             if (holder.getAdapterPosition() == getItemCount() - 1) {
@@ -128,14 +145,26 @@ public class AlbumAdapter extends AbsMultiSelectAdapter<AlbumAdapter.ViewHolder,
         loadAlbumCover(album, holder);
     }
 
-    protected void setColors(int color, ViewHolder holder) {
+    protected void updateDetails(int color, ViewHolder holder) {
         if (holder.paletteColorContainer != null) {
-            holder.paletteColorContainer.setBackgroundColor(color);
-            if (holder.title != null) {
-                holder.title.setTextColor(MaterialValueHelper.getPrimaryTextColor(activity, ColorUtil.isColorLight(color)));
-            }
-            if (holder.text != null) {
-                holder.text.setTextColor(MaterialValueHelper.getSecondaryTextColor(activity, ColorUtil.isColorLight(color)));
+            if (showFooter) {
+                holder.paletteColorContainer.setVisibility(View.VISIBLE);
+                holder.paletteColorContainer.setLayoutParams(
+                    new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, activity.getResources().getDimensionPixelSize(R.dimen.item_grid_color_container_height))
+                );
+
+                holder.paletteColorContainer.setBackgroundColor(color);
+                if (holder.title != null) {
+                    holder.title.setTextColor(MaterialValueHelper.getPrimaryTextColor(activity, ColorUtil.isColorLight(color)));
+                }
+                if (holder.text != null) {
+                    holder.text.setTextColor(MaterialValueHelper.getSecondaryTextColor(activity, ColorUtil.isColorLight(color)));
+                }
+            } else {
+                holder.paletteColorContainer.setVisibility(View.GONE);
+                holder.paletteColorContainer.setLayoutParams(
+                    new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0)
+                );
             }
         }
     }
@@ -152,15 +181,15 @@ public class AlbumAdapter extends AbsMultiSelectAdapter<AlbumAdapter.ViewHolder,
                     @Override
                     public void onLoadCleared(Drawable placeholder) {
                         super.onLoadCleared(placeholder);
-                        setColors(getDefaultFooterColor(), holder);
+                        updateDetails(getDefaultFooterColor(), holder);
                     }
 
                     @Override
                     public void onColorReady(int color) {
                         if (usePalette)
-                            setColors(color, holder);
+                            updateDetails(color, holder);
                         else
-                            setColors(getDefaultFooterColor(), holder);
+                            updateDetails(getDefaultFooterColor(), holder);
                     }
                 });
     }
@@ -181,21 +210,14 @@ public class AlbumAdapter extends AbsMultiSelectAdapter<AlbumAdapter.ViewHolder,
     }
 
     @Override
-    protected String getName(Album album) {
-        return album.getTitle();
-    }
-
-    @Override
-    protected void onMultipleItemAction(@NonNull MenuItem menuItem, @NonNull ArrayList<Album> selection) {
-        SongsMenuHelper.handleMenuClick(activity, getSongList(selection), menuItem.getItemId());
+    protected void onMultipleItemAction(@NonNull final MenuItem menuItem, @NonNull final Map<Integer, Album> selection) {
+        SongsMenuHelper.handleMenuClick(activity, getSongList(selection.values().iterator()), menuItem.getItemId());
     }
 
     @NonNull
-    private ArrayList<Song> getSongList(@NonNull List<Album> albums) {
+    private ArrayList<Song> getSongList(@NonNull Iterator<Album> albums) {
         final ArrayList<Song> songs = new ArrayList<>();
-        for (Album album : albums) {
-            songs.addAll(album.songs);
-        }
+        albums.forEachRemaining(album -> songs.addAll(album.songs));
         return songs;
     }
 
@@ -244,7 +266,6 @@ public class AlbumAdapter extends AbsMultiSelectAdapter<AlbumAdapter.ViewHolder,
 
         @Override
         public boolean onLongClick(View view) {
-            setColor(ThemeStore.primaryColor(activity));
             toggleChecked(getAdapterPosition());
             return true;
         }

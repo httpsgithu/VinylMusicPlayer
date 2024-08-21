@@ -1,15 +1,17 @@
 package com.poupa.vinylmusicplayer.dialogs;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.DialogFragment;
 
 import com.afollestad.materialdialogs.MaterialDialog;
@@ -33,6 +35,8 @@ public class BlacklistFolderChooserDialog extends DialogFragment implements Mate
     private FolderCallback callback;
 
     final String initialPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+
+    private final String KEY = "current_path";
 
     private String[] getContentsArray() {
         if (parentContents == null) {
@@ -73,27 +77,35 @@ public class BlacklistFolderChooserDialog extends DialogFragment implements Mate
     @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-                && ActivityCompat.checkSelfPermission(
-                getActivity(), Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            return new MaterialDialog.Builder(getActivity())
-                    .title(R.string.md_error_label)
-                    .content(R.string.md_storage_perm_error)
-                    .positiveText(android.R.string.ok)
-                    .build();
+        final Activity activity = requireActivity();
+        if (Build.VERSION.SDK_INT >= VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(activity, Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                return new MaterialDialog.Builder(activity)
+                        .title(R.string.md_error_label)
+                        .content(R.string.android13_storage_perm_error)
+                        .positiveText(android.R.string.ok)
+                        .build();
+            }
+        } else if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                && (ContextCompat.checkSelfPermission(activity, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED))
+        {
+                return new MaterialDialog.Builder(activity)
+                        .title(R.string.md_error_label)
+                        .content(R.string.md_storage_perm_error)
+                        .positiveText(android.R.string.ok)
+                        .build();
         }
         if (savedInstanceState == null) {
             savedInstanceState = new Bundle();
         }
-        if (!savedInstanceState.containsKey("current_path")) {
-            savedInstanceState.putString("current_path", initialPath);
+        if (!savedInstanceState.containsKey(KEY)) {
+            savedInstanceState.putString(KEY, initialPath);
         }
-        parentFolder = new File(savedInstanceState.getString("current_path", "/"));
+        parentFolder = new File(savedInstanceState.getString(KEY, "/"));
         checkIfCanGoUp();
         parentContents = listFiles();
         MaterialDialog.Builder builder =
-                new MaterialDialog.Builder(getActivity())
+                new MaterialDialog.Builder(activity)
                         .title(parentFolder.getAbsolutePath())
                         .items(getContentsArray())
                         .itemsCallback(this)
@@ -144,7 +156,7 @@ public class BlacklistFolderChooserDialog extends DialogFragment implements Mate
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putString("current_path", parentFolder.getAbsolutePath());
+        outState.putString(KEY, parentFolder.getAbsolutePath());
     }
 
     public void setCallback(FolderCallback callback) {
@@ -155,7 +167,7 @@ public class BlacklistFolderChooserDialog extends DialogFragment implements Mate
         void onFolderSelection(@NonNull BlacklistFolderChooserDialog dialog, @NonNull File folder);
     }
 
-    private static class FolderSorter implements Comparator<File> {
+    static class FolderSorter implements Comparator<File> {
 
         @Override
         public int compare(File lhs, File rhs) {

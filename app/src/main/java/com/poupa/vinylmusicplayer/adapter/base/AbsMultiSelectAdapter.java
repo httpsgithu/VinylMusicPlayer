@@ -1,84 +1,116 @@
 package com.poupa.vinylmusicplayer.adapter.base;
 
-import android.app.Activity;
 import android.content.Context;
+import android.view.ActionMode;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.MenuRes;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.afollestad.materialcab.MaterialCab;
 import com.poupa.vinylmusicplayer.R;
-import com.poupa.vinylmusicplayer.interfaces.CabHolder;
+import com.poupa.vinylmusicplayer.helper.menu.MenuHelper;
+import com.poupa.vinylmusicplayer.interfaces.PaletteColorHolder;
 import com.poupa.vinylmusicplayer.ui.activities.base.AbsThemeActivity;
 import com.poupa.vinylmusicplayer.util.VinylMusicPlayerColorUtil;
 
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * @author Karim Abou Zeid (kabouzeid)
  */
-public abstract class AbsMultiSelectAdapter<VH extends RecyclerView.ViewHolder, I> extends RecyclerView.Adapter<VH> implements MaterialCab.Callback {
+public abstract class AbsMultiSelectAdapter<VH extends RecyclerView.ViewHolder, I>
+        extends RecyclerView.Adapter<VH>
+{
     @Nullable
-    private final CabHolder cabHolder;
-    private MaterialCab cab;
-    private final ArrayList<I> checked;
+    private final PaletteColorHolder palette;
+    @Nullable
+    private ActionMode actionMode;
+    private final LinkedHashMap<Integer, I> checked;
+    @MenuRes
     private int menuRes;
-    private final Context context;
+    @NonNull
+    private final AbsThemeActivity activity;
 
-    private int color;
-
-    public AbsMultiSelectAdapter(Context context, @Nullable CabHolder cabHolder, @MenuRes int menuRes) {
-        this.cabHolder = cabHolder;
-        checked = new ArrayList<>();
+    protected AbsMultiSelectAdapter(@NonNull final AbsThemeActivity activity, @Nullable final PaletteColorHolder holder, @MenuRes int menuRes) {
+        palette = holder;
+        checked = new LinkedHashMap<>();
         this.menuRes = menuRes;
-        this.context = context;
+        this.activity = activity;
     }
 
-    protected void setMultiSelectMenuRes(@MenuRes int menuRes) {
+    protected void setMultiSelectMenuRes(@MenuRes final int menuRes) {
         this.menuRes = menuRes;
     }
 
     protected boolean toggleChecked(final int position) {
-        if (cabHolder != null) {
-            I identifier = getIdentifier(position);
-            if (identifier == null) return false;
+        final I identifier = getIdentifier(position);
+        if (identifier == null) {return false;}
 
-            if (!checked.remove(identifier)) checked.add(identifier);
+        if (checked.containsKey(position)) {checked.remove(position);}
+        else {checked.put(position, identifier);}
 
-            notifyItemChanged(position);
-            updateCab();
-            return true;
-        }
-        return false;
+        notifyItemChanged(position);
+        startOrUpdateActionMode();
+
+        return true;
     }
 
-    protected void checkAll() {
-        if (cabHolder != null) {
-            checked.clear();
-            for (int i = 0; i < getItemCount(); i++) {
-                I identifier = getIdentifier(i);
-                if (identifier != null) {
-                    checked.add(identifier);
-                }
+    private void checkAll() {
+        checked.clear();
+        final int itemCount = getItemCount();
+        for (int i = 0; i < itemCount; i++) {
+            final I identifier = getIdentifier(i);
+            if (identifier != null) {
+                checked.put(i, identifier);
             }
-            notifyDataSetChanged();
-            updateCab();
         }
+        notifyDataSetChanged();
+        startOrUpdateActionMode();
     }
 
-    private void updateCab() {
-        if (cabHolder != null) {
-            if (cab == null || !cab.isActive()) {
-                cab = cabHolder.openCab(menuRes, this);
+    private void startOrUpdateActionMode() {
+        if (actionMode == null) {
+            if (palette != null) {
+                @ColorInt final int color = palette.getPaletteColor();
+                actionMode = ActionModeHelper.startActionMode(activity, menuRes, color, new ActionMode.Callback() {
+                    @Override
+                    public boolean onCreateActionMode(final ActionMode mode, final Menu menu) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onPrepareActionMode(final ActionMode mode, final Menu menu) {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onActionItemClicked(final ActionMode mode, final MenuItem item) {
+                        if (item.getItemId() == R.id.action_multi_select_adapter_check_all) {
+                            checkAll();
+                        } else {
+                            onMultipleItemAction(item, checked);
+                            mode.finish();
+                            clearChecked();
+                        }
+                        return true;
+                    }
+
+                    @Override
+                    public void onDestroyActionMode(final ActionMode mode) {
+                        clearChecked();
+                        actionMode = null;
+                    }
+                });
             }
-            final int size = checked.size();
-            if (size <= 0) cab.finish();
-            else if (size == 1) cab.setTitle(getName(checked.get(0)));
-            else cab.setTitle(context.getString(R.string.x_selected, size));
         }
+        ActionModeHelper.updateActionMode(activity, actionMode, checked.size());
     }
 
     private void clearChecked() {
@@ -86,49 +118,74 @@ public abstract class AbsMultiSelectAdapter<VH extends RecyclerView.ViewHolder, 
         notifyDataSetChanged();
     }
 
-    protected boolean isChecked(I identifier) {
-        return checked.contains(identifier);
+    protected boolean isChecked(final int position) {
+        return checked.containsKey(position);
     }
 
     protected boolean isInQuickSelectMode() {
-        return cab != null && cab.isActive();
-    }
-
-    public void setColor(int color) {
-        this.color = color;
-    }
-
-    @Override
-    public boolean onCabCreated(MaterialCab materialCab, Menu menu) {
-        AbsThemeActivity.static_setStatusbarColor((Activity) context, VinylMusicPlayerColorUtil.shiftBackgroundColorForLightText(color));
-        return true;
-    }
-
-    @Override
-    public boolean onCabItemClicked(MenuItem menuItem) {
-        if (menuItem.getItemId() == R.id.action_multi_select_adapter_check_all) {
-            checkAll();
-        } else {
-            onMultipleItemAction(menuItem, new ArrayList<>(checked));
-            cab.finish();
-            clearChecked();
-        }
-        return true;
-    }
-
-    @Override
-    public boolean onCabFinished(MaterialCab materialCab) {
-        AbsThemeActivity.static_setStatusbarColor((Activity) context, color);
-        clearChecked();
-        return true;
-    }
-
-    protected String getName(I object) {
-        return object.toString();
+        return actionMode != null;
     }
 
     @Nullable
     protected abstract I getIdentifier(int position);
 
-    protected abstract void onMultipleItemAction(MenuItem menuItem, ArrayList<I> selection);
+    protected abstract void onMultipleItemAction(@NonNull final MenuItem menuItem, @NonNull final Map<Integer, I> selection);
+
+    public final class ActionModeHelper {
+        @Nullable
+        public static ActionMode startActionMode(
+                @NonNull final AbsThemeActivity activity,
+                @MenuRes final int menuRes,
+                @ColorInt final int backgroundColor,
+                @NonNull final ActionMode.Callback callbacks)
+        {
+            return activity.startActionMode(
+                    new ActionMode.Callback() {
+                        @Override
+                        public boolean onCreateActionMode(final ActionMode mode, final Menu menu) {
+                            final MenuInflater inflater = mode.getMenuInflater();
+                            inflater.inflate(menuRes, menu);
+                            MenuHelper.decorateDestructiveItems(menu, activity);
+
+                            return callbacks.onCreateActionMode(mode, menu);
+                        }
+
+                        @Override
+                        public boolean onPrepareActionMode(final ActionMode mode, final Menu menu) {
+                            final int adjustedColor = VinylMusicPlayerColorUtil.shiftBackgroundColorForLightText(backgroundColor);
+
+                            final View view = activity.getWindow().getDecorView().findViewById(R.id.action_mode_bar);
+                            if (view != null) {view.setBackgroundColor(adjustedColor);}
+
+                            activity.setStatusbarColor(adjustedColor);
+
+                            callbacks.onPrepareActionMode(mode, menu);
+                            return true;
+                        }
+
+                        @Override
+                        public boolean onActionItemClicked(final ActionMode mode, final MenuItem item) {
+                            return callbacks.onActionItemClicked(mode, item);
+                        }
+
+                        @Override
+                        public void onDestroyActionMode(final ActionMode mode) {
+                            activity.setStatusbarColor(backgroundColor);
+
+                            callbacks.onDestroyActionMode(mode);
+                        }
+                    }
+            );
+        }
+
+        public static void updateActionMode(@NonNull final Context context, @Nullable final ActionMode mode, final int checkedCount) {
+            if (mode == null) {return;}
+
+            if (checkedCount <= 0) {
+                mode.finish();
+            } else {
+                mode.setTitle(context.getString(R.string.x_selected, checkedCount));
+            }
+        }
+    }
 }

@@ -1,8 +1,8 @@
 package com.poupa.vinylmusicplayer.service;
 
-import android.os.Handler;
-
 import static com.poupa.vinylmusicplayer.service.MusicService.PLAY_STATE_CHANGED;
+
+import android.os.Handler;
 
 public class ThrottledSeekHandler implements Runnable {
     // milliseconds to throttle before calling run() to aggregate events
@@ -16,8 +16,12 @@ public class ThrottledSeekHandler implements Runnable {
     }
 
     public void notifySeek() {
-        mHandler.removeCallbacks(this);
-        mHandler.postDelayed(this, THROTTLE);
+        synchronized (mMusicService) {
+            if (mHandler.getLooper().getThread().isAlive()) {
+                mHandler.removeCallbacks(this);
+                mHandler.postDelayed(this, THROTTLE);
+            }
+        }
     }
 
     @Override

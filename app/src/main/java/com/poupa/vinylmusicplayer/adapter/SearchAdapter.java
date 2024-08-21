@@ -40,8 +40,8 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
     private static final int ARTIST = 2;
     private static final int SONG = 3;
 
-    private final AppCompatActivity activity;
-    private List<Object> dataSet;
+    final AppCompatActivity activity;
+    List<Object> dataSet;
 
     public SearchAdapter(@NonNull AppCompatActivity activity, @NonNull List<Object> dataSet) {
         this.activity = activity;
@@ -100,7 +100,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
                 break;
             case SONG:
                 final Song song = (Song) dataSet.get(position);
-                holder.title.setText(song.title);
+                holder.title.setText(song.getTitle());
                 holder.text.setText(MusicUtil.getSongInfoString(song));
                 GlideApp.with(activity)
                         .asBitmap()
@@ -152,7 +152,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
                     menu.setOnClickListener(new SongMenuHelper.OnClickSongMenu(activity) {
                         @Override
                         public Song getSong() {
-                            return (Song) dataSet.get(getAdapterPosition());
+                            return (Song) dataSet.get(getBindingAdapterPosition());
                         }
 
                         @Override
@@ -191,7 +191,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
 
         @Override
         public void onClick(View view) {
-            Object item = dataSet.get(getAdapterPosition());
+            Object item = dataSet.get(getBindingAdapterPosition());
             switch (getItemViewType()) {
                 case ALBUM:
                     NavigationUtil.goToAlbum(activity,
@@ -210,7 +210,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
                 case SONG:
                     ArrayList<Song> playList = new ArrayList<>();
                     playList.add((Song) item);
-                    MusicPlayerRemote.openQueue(playList, 0, true);
+                    MusicPlayerRemote.enqueueSongsWithConfirmation(activity, playList, 0);
                     break;
             }
         }

@@ -8,12 +8,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.poupa.vinylmusicplayer.discog.Discography;
-import com.poupa.vinylmusicplayer.model.Playlist;
 import com.poupa.vinylmusicplayer.model.PlaylistSong;
 import com.poupa.vinylmusicplayer.model.Song;
+import com.poupa.vinylmusicplayer.provider.StaticPlaylist;
 import com.poupa.vinylmusicplayer.util.StringUtil;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class PlaylistSongLoader {
     @NonNull
@@ -43,23 +44,13 @@ public class PlaylistSongLoader {
      * @return Song list from the playlist found by search term
      */
     @NonNull
-    public static ArrayList<Song> getPlaylistSongList(
-            @NonNull final Context context,
-            @NonNull final String playlistNameSearchTerm) {
-        // First find all playlists whose name contains the desired playlist name
-
-        // Avoid SQL injection by using parameter
-        // it seems column case sensitivity is defined on table creation time so leave
-        // search term alone for this pass
-        final String selection = StringUtil.join(MediaStore.Audio.Playlists.NAME, " LIKE '%' || ? ||'%'");
-        final Cursor cursor = PlaylistLoader.makePlaylistCursor(context, selection, new String[]{
-                playlistNameSearchTerm// 0
-        });
-
+    public static List<? extends Song> getPlaylistSongList(
+            @NonNull final String playlistNameSearchTerm)
+    {
         // Find closest match
         final String lowercaseSearchTerm = playlistNameSearchTerm.toLowerCase();
-        Playlist match = null;
-        for(Playlist playlist : PlaylistLoader.getAllPlaylists(cursor)) {
+        StaticPlaylist match = null;
+        for(StaticPlaylist playlist : StaticPlaylist.getAllPlaylists()) {
             if (match == null) {
                 match = playlist;
             } else {
@@ -71,17 +62,17 @@ public class PlaylistSongLoader {
             return new ArrayList<>();
         }
 
-        return getPlaylistSongList(context, match.id);
+        return match.asSongs();
     }
 
     /**
      * This can be sped up by passing in indexOfs and lowerCaseOfs.
      * Users probably wont complain though, should be fast enough as is.
      */
-    @NonNull private static Playlist closerMatch(
+    @NonNull private static StaticPlaylist closerMatch(
             @NonNull final String playlistNameSearchTerm,
-            @NonNull final Playlist first,
-            @NonNull final Playlist second) {
+            @NonNull final StaticPlaylist first,
+            @NonNull final StaticPlaylist second) {
         final StringUtil.ClosestMatch match = StringUtil.closestOfMatches(
                 playlistNameSearchTerm,
                 first.name.toLowerCase(),

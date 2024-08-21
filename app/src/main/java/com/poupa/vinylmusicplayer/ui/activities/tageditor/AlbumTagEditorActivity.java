@@ -11,7 +11,6 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -32,13 +31,16 @@ import com.poupa.vinylmusicplayer.lastfm.rest.LastFMRestClient;
 import com.poupa.vinylmusicplayer.lastfm.rest.model.LastFmAlbum;
 import com.poupa.vinylmusicplayer.loader.AlbumLoader;
 import com.poupa.vinylmusicplayer.model.Song;
+import com.poupa.vinylmusicplayer.util.AutoCloseAudioFile;
 import com.poupa.vinylmusicplayer.util.ImageUtil;
 import com.poupa.vinylmusicplayer.util.LastFMUtil;
+import com.poupa.vinylmusicplayer.util.MusicUtil;
+import com.poupa.vinylmusicplayer.util.OopsHandler;
+import com.poupa.vinylmusicplayer.util.SafeToast;
 import com.poupa.vinylmusicplayer.util.VinylMusicPlayerColorUtil;
 
 import org.jaudiotagger.tag.FieldKey;
 
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -54,8 +56,8 @@ public class AlbumTagEditorActivity extends AbsTagEditorActivity implements Text
     EditText genre;
     EditText year;
 
-    private Bitmap albumArtBitmap;
-    private boolean deleteAlbumArt;
+    Bitmap albumArtBitmap;
+    boolean deleteAlbumArt;
     private LastFMRestClient lastFMRestClient;
 
     @Override
@@ -63,11 +65,12 @@ public class AlbumTagEditorActivity extends AbsTagEditorActivity implements Text
         super.onCreate(savedInstanceState);
 
         lastFMRestClient = new LastFMRestClient(this);
-
-        setUpViews();
     }
 
-    private void setUpViews() {
+    @Override
+    protected void setUpViews() {
+        super.setUpViews();
+
         fillViewsWithFileTags();
         albumTitle.addTextChangedListener(this);
         albumArtist.addTextChangedListener(this);
@@ -75,23 +78,32 @@ public class AlbumTagEditorActivity extends AbsTagEditorActivity implements Text
         year.addTextChangedListener(this);
 
         // Dont wrap text if line too long, make it scrollable
-        // https://stackoverflow.com/questions/5146207/disable-word-wrap-in-an-android-multi-line-textview
         albumArtist.setHorizontallyScrolling(true);
     }
 
 
     private void fillViewsWithFileTags() {
-        albumTitle.setText(getAlbumTitle());
-        albumArtist.setText(getAlbumArtistName());
-        genre.setText(getGenreName());
-        year.setText(getSongYear());
+        try (AutoCloseAudioFile audio = getAudioFile()) {
+            if (audio != null) {
+                albumTitle.setText(getAlbumTitle(audio.get()));
+                albumArtist.setText(getAlbumArtistName(audio.get()));
+                genre.setText(getGenreName(audio.get()));
+                year.setText(getSongYear(audio.get()));
+            }
+        } catch (Exception e) {
+            OopsHandler.collectStackTrace(e);
+        }
     }
 
     @Override
     protected void loadCurrentImage() {
-        Bitmap bitmap = getAlbumArt();
-        setImageBitmap(bitmap, VinylMusicPlayerColorUtil.getColor(VinylMusicPlayerColorUtil.generatePalette(bitmap), ATHUtil.resolveColor(this, R.attr.defaultFooterColor)));
-        deleteAlbumArt = false;
+        try (AutoCloseAudioFile audio = getAudioFile()) {
+            Bitmap bitmap = MusicUtil.getMediaStoreAlbumCover(audio);
+            setImageBitmap(bitmap, VinylMusicPlayerColorUtil.getColor(VinylMusicPlayerColorUtil.generatePalette(bitmap), ATHUtil.resolveColor(this, R.attr.defaultFooterColor)));
+            deleteAlbumArt = false;
+        } catch (Exception e) {
+            OopsHandler.collectStackTrace(e);
+        }
     }
 
     @Override
@@ -99,10 +111,10 @@ public class AlbumTagEditorActivity extends AbsTagEditorActivity implements Text
         String albumTitleStr = albumTitle.getText().toString();
         String albumArtistNameStr = albumArtist.getText().toString();
         if (albumArtistNameStr.trim().equals("") || albumTitleStr.trim().equals("")) {
-            Toast.makeText(this, getResources().getString(R.string.album_or_artist_empty), Toast.LENGTH_SHORT).show();
+            SafeToast.show(this, getResources().getString(R.string.album_or_artist_empty));
             return;
         }
-        lastFMRestClient.getApiService().getAlbumInfo(albumTitleStr, albumArtistNameStr, null).enqueue(new Callback<LastFmAlbum>() {
+        lastFMRestClient.getApiService().getAlbumInfo(albumTitleStr, albumArtistNameStr, null).enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<LastFmAlbum> call, @NonNull Response<LastFmAlbum> response) {
                 LastFmAlbum lastFmAlbum = response.body();
@@ -143,8 +155,8 @@ public class AlbumTagEditorActivity extends AbsTagEditorActivity implements Text
             }
 
             private void toastLoadingFailed() {
-                Toast.makeText(AlbumTagEditorActivity.this,
-                        R.string.could_not_download_album_cover, Toast.LENGTH_SHORT).show();
+                SafeToast.show(AlbumTagEditorActivity.this,
+                        R.string.could_not_download_album_cover);
             }
         });
     }
@@ -169,7 +181,12 @@ public class AlbumTagEditorActivity extends AbsTagEditorActivity implements Text
         fieldKeyValueMap.put(FieldKey.GENRE, genre.getText().toString());
         fieldKeyValueMap.put(FieldKey.YEAR, year.getText().toString());
 
-        writeValuesToFiles(fieldKeyValueMap, deleteAlbumArt ? new ArtworkInfo(getId(), null) : albumArtBitmap == null ? null : new ArtworkInfo(getId(), albumArtBitmap));
+        writeValuesToFiles(fieldKeyValueMap,
+                deleteAlbumArt
+                        ? new ArtworkInfo(getId(), null)
+                        : albumArtBitmap == null
+                                ? null
+                                : new ArtworkInfo(getId(), albumArtBitmap));
     }
 
     @Override
@@ -193,13 +210,8 @@ public class AlbumTagEditorActivity extends AbsTagEditorActivity implements Text
 
     @NonNull
     @Override
-    protected List<String> getSongPaths() {
-        ArrayList<Song> songs = AlbumLoader.getAlbum(getId()).songs;
-        ArrayList<String> paths = new ArrayList<>(songs.size());
-        for (Song song : songs) {
-            paths.add(song.data);
-        }
-        return paths;
+    protected List<Song> getSongs() {
+        return AlbumLoader.getAlbum(getId()).songs;
     }
 
     @Override

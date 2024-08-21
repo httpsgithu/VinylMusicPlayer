@@ -64,11 +64,6 @@ public class MiniPlayerFragment extends AbsMusicServiceFragment implements Music
         setUpMiniPlayer();
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-    }
-
     private void setUpMiniPlayer() {
         setUpPlayPauseButton();
         progressBar.setSupportProgressTintList(ColorStateList.valueOf(ThemeStore.accentColor(getActivity())));
@@ -82,7 +77,7 @@ public class MiniPlayerFragment extends AbsMusicServiceFragment implements Music
     }
 
     private void updateSongTitle() {
-        miniPlayerTitle.setText(MusicPlayerRemote.getCurrentSong().title);
+        miniPlayerTitle.setText(MusicPlayerRemote.getCurrentSong().getTitle());
     }
 
     @Override
@@ -129,10 +124,10 @@ public class MiniPlayerFragment extends AbsMusicServiceFragment implements Music
                 public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
                     if (Math.abs(velocityX) > Math.abs(velocityY)) {
                         if (velocityX < 0) {
-                            MusicPlayerRemote.playNextSong();
+                            MusicPlayerRemote.playNextSong(true);
                             return true;
                         } else if (velocityX > 0) {
-                            MusicPlayerRemote.playPreviousSong();
+                            MusicPlayerRemote.playPreviousSong(true);
                             return true;
                         }
                     }

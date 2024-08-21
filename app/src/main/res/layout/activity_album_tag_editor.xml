@@ -105,9 +105,9 @@
                         android:layout_gravity="center"
                         android:fontFamily="sans-serif"
                         android:gravity="center_vertical"
-                        android:hint="@string/genre"
-                        android:inputType="text|textCapWords"
-                        android:singleLine="true"
+                        android:hint="@string/genre_multiple"
+                        android:inputType="text|textCapWords|textMultiLine"
+                        android:singleLine="false"
                         android:textAppearance="@style/TextAppearance.AppCompat.Title" />
 
                 </com.google.android.material.textfield.TextInputLayout>
@@ -138,8 +138,8 @@
 
     <View
         android:layout_width="match_parent"
-        android:layout_height="?android:attr/actionBarSize"
-        android:background="@drawable/shadow_down" />
+        android:layout_height="@dimen/toolbar_scrim_height"
+        android:background="@drawable/shadow_down_strong" />
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"

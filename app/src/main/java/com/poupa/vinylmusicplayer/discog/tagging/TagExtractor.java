@@ -1,17 +1,23 @@
 package com.poupa.vinylmusicplayer.discog.tagging;
 
+import android.content.Context;
+
 import androidx.annotation.NonNull;
 
+import com.poupa.vinylmusicplayer.App;
+import com.poupa.vinylmusicplayer.R;
 import com.poupa.vinylmusicplayer.model.Song;
+import com.poupa.vinylmusicplayer.util.AutoCloseAudioFile;
+import com.poupa.vinylmusicplayer.util.OopsHandler;
+import com.poupa.vinylmusicplayer.util.SAFUtil;
+import com.poupa.vinylmusicplayer.util.SafeToast;
 
 import org.jaudiotagger.audio.AudioFile;
-import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.mp3.MP3File;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.KeyNotFoundException;
 import org.jaudiotagger.tag.Tag;
 
-import java.io.File;
 import java.util.List;
 
 /**
@@ -28,8 +34,7 @@ public class TagExtractor {
             final String value = tags.getFirst(tag).trim();
             return (value.isEmpty()) ? defaultValue : value;
         }
-        catch (KeyNotFoundException ignored) {return defaultValue;}
-        catch (UnsupportedOperationException ignored){ return defaultValue;}
+        catch (KeyNotFoundException | UnsupportedOperationException ignored) {return defaultValue;}
     };
     private static final Func3Args<Tag, FieldKey, Integer, Integer> safeGetTagAsInteger = (tags, tag, defaultValue) -> {
         try {return Integer.parseInt(safeGetTag.apply(tags, tag, String.valueOf(defaultValue)));}
@@ -51,33 +56,45 @@ public class TagExtractor {
     };
 
     public static void extractTags(@NonNull Song song) {
-        try {
+        final Context context = App.getStaticContext();
+        try (AutoCloseAudioFile audio = SAFUtil.loadReadOnlyAudioFile(context, song)){
+            if (audio == null) {
+                // Cannot get the audio content
+                SafeToast.show(context, context.getString(R.string.saf_read_failed, song.data));
+                return;
+            }
             // Override with metadata extracted from the file ourselves
-            AudioFile file = AudioFileIO.read(new File(song.data));
+            final AudioFile file = audio.get();
             Tag tags = file.getTagOrCreateAndSetDefault();
             if (tags.isEmpty() && (file instanceof MP3File)) {
                 tags = ((MP3File) file).getID3v1Tag();
             }
+            if (tags != null) {
+                song.albumName = safeGetTag.apply(tags, FieldKey.ALBUM, song.albumName);
+                song.artistNames = safeGetTagAsList.apply(tags, FieldKey.ARTIST, song.artistNames);
+                song.albumArtistNames = safeGetTagAsList.apply(tags, FieldKey.ALBUM_ARTIST, song.albumArtistNames);
+                song.title = safeGetTag.apply(tags, FieldKey.TITLE, song.title);
 
-            song.albumName = safeGetTag.apply(tags, FieldKey.ALBUM, song.albumName);
-            song.artistNames  = safeGetTagAsList.apply(tags, FieldKey.ARTIST, song.artistNames);
-            song.albumArtistNames = safeGetTagAsList.apply(tags, FieldKey.ALBUM_ARTIST, song.albumArtistNames);
-            song.title = safeGetTag.apply(tags, FieldKey.TITLE, song.title);
+                String genres = safeGetTag.apply(tags, FieldKey.GENRE, "");
+                song.genres = MultiValuesTagUtil.split(genres);
+
+                song.discNumber = safeGetTagAsInteger.apply(tags, FieldKey.DISC_NO, song.discNumber);
+                song.trackNumber = safeGetTagAsInteger.apply(tags, FieldKey.TRACK, song.trackNumber);
+                song.year = safeGetTagAsReleaseYear.apply(tags, FieldKey.YEAR, song.year);
+            }
+
             if (song.title.isEmpty()) {
                 // fallback to use the file name
                 song.title = file.getFile().getName();
             }
 
-            song.genre = safeGetTag.apply(tags, FieldKey.GENRE, song.genre);
-            song.discNumber = safeGetTagAsInteger.apply(tags, FieldKey.DISC_NO, song.discNumber);
-            song.trackNumber = safeGetTagAsInteger.apply(tags, FieldKey.TRACK, song.trackNumber);
-            song.year = safeGetTagAsReleaseYear.apply(tags, FieldKey.YEAR, song.year);
-
             ReplayGainTagExtractor.ReplayGainValues rgValues = ReplayGainTagExtractor.setReplayGainValues(file);
             song.replayGainAlbum = rgValues.album;
             song.replayGainTrack = rgValues.track;
+            song.replayGainPeakAlbum = rgValues.peakAlbum;
+            song.replayGainPeakTrack = rgValues.peakTrack;
         } catch (@NonNull Exception | NoSuchMethodError | VerifyError e) {
-            e.printStackTrace();
+            OopsHandler.collectStackTrace(e);
         }
     }
 }

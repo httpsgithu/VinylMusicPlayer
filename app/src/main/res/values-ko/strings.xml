@@ -123,6 +123,7 @@
     <string name="pref_header_colors">색상</string>
     <string name="pref_header_now_playing_screen">지금 재생 중</string>
     <string name="pref_title_general_theme">기본 테마</string>
+    <string name="pref_header_album">앨범</string>
     <string name="pref_header_audio">오디오</string>
     <string name="pref_header_library">라이브러리</string>
     <string name="pref_header_images">이미지</string>
@@ -132,12 +133,12 @@
     <string name="pref_title_navigation_bar">내비게이션 바 색상 자동 변경</string>
     <string name="pref_title_app_shortcuts">앱 바로 가기 색상 자동 변경</string>
     <string name="pref_title_widget_background_transparent">위젯 배경 투명화</string>
-    <string name="pref_title_album_art_on_lockscreen">앨범 커버 보이기</string>
+<!--    <string name="pref_title_album_art_on_lockscreen">앨범 커버 보이기</string>-->
     <string name="pref_title_auto_download_metadata">음악 정보 자동 다운로드</string>
-    <string name="pref_title_blurred_album_art">앨범 커버 흐리게</string>
+<!--    <string name="pref_title_blurred_album_art">앨범 커버 흐리게</string>-->
     <string name="pref_title_colored_notification">알림 색상 자동 변경</string>
     <string name="pref_title_classic_notification">클래식 알림 디자인</string>
-    <string name="pref_title_ignore_media_store_artwork">미디어 저장소 앨범 커버 무시</string>
+<!--    <string name="pref_title_ignore_media_store_artwork">미디어 저장소 앨범 커버 무시</string>-->
     <string name="pref_title_gapless_playback">갭리스 재생</string>
     <string name="pref_title_audio_ducking">오디오 포커스 손실 시 볼륨 줄이기</string>
     <string name="pref_title_recently_played_interval">\'최근에 들은 곡\' 재생 목록 기준</string>
@@ -172,12 +173,12 @@
     <string name="empty">비어 있음</string>
     <string name="playlist_name_empty">재생 목록 이름</string>
     <string name="song">노래</string>
-    <string name="pref_summary_album_art_on_lockscreen">지금 재생 중인 곡의 앨범 커버를 잠금 화면 배경화면으로 사용합니다.</string>
-    <string name="pref_summary_blurred_album_art">잠금 화면의 앨범 커버를 흐리게 표시합니다. 서드 파티 앱 및 위젯에서 문제가 발생할 수 있습니다.</string>
+<!--    <string name="pref_summary_album_art_on_lockscreen">지금 재생 중인 곡의 앨범 커버를 잠금 화면 배경화면으로 사용합니다.</string>-->
+<!--    <string name="pref_summary_blurred_album_art">잠금 화면의 앨범 커버를 흐리게 표시합니다. 서드 파티 앱 및 위젯에서 문제가 발생할 수 있습니다.</string>-->
     <string name="pref_summary_classic_notification">클래식 알림 디자인을 사용합니다.</string>
     <string name="pref_summary_colored_notification">"알림 색상을 앨범 커버의 주요 색상으로 변경합니다."</string>
     <string name="pref_summary_gapless_playback">"일부 기기에서 재생 문제가 발생할 수 있습니다."</string>
-    <string name="pref_summary_ignore_media_store_artwork">앨범 커버의 품질을 높일 수 있지만 이미지를 불러오는 시간이 더 오래 걸립니다. 저화질 앨범 커버에 문제가 있을 때만 사용하세요.</string>
+<!--    <string name="pref_summary_ignore_media_store_artwork">앨범 커버의 품질을 높일 수 있지만 이미지를 불러오는 시간이 더 오래 걸립니다. 저화질 앨범 커버에 문제가 있을 때만 사용하세요.</string>-->
     <string name="pref_summary_colored_navigation_bar">내비게이션 바 색상을 앱의 주 색상으로 변경합니다.</string>
     <string name="pref_summary_colored_app_shortcuts">앱 바로 가기의 색상을 앱의 주 색상으로 변경합니다.</string>
     <string name="pref_summary_widget_background_transparent">위젯의 배경을 투명하게 변경합니다.</string>
@@ -208,6 +209,7 @@
     <string name="new_playlist_title">새 재생 목록</string>
     <string name="colored_footers">카드 하단 색상 자동 변경</string>
     <string name="special_thanks_to">특별히 감사드리는 분</string>
+    <string name="show_footer">바닥글 표시</string>
     <string name="changelog">변경 사항</string>
     <string name="licenses">라이선스</string>
     <string name="permissions_denied">권한이 거부되었습니다.</string>
@@ -245,8 +247,6 @@
     <string name="nothing_to_scan">스캔할 항목이 없습니다.</string>
     <string name="scanned_files">%2$d개 파일 중 %1$d개 파일을 스캔했습니다.</string>
     <string name="could_not_scan_files">%d개 파일을 스캔하지 못했습니다.</string>
-    <string name="scanning_x_songs_in_progress">%1$d곡 업데이트 중…</string>
-    <string name="scanning_x_songs_finished">%1$d곡을 업데이트했습니다.</string>
     <string name="listing_files">파일 목록 생성 중</string>
     <string name="new_start_directory">%s 디렉터리를 새 시작 디렉터리로 설정했습니다.</string>
     <string name="app_widget_big_name">Vinyl Music Player - 대형</string>
@@ -314,7 +314,6 @@
     <string name="dialog_ringtone_title">벨소리로 설정</string>
     <string name="dialog_ringtone_message">벨소리를 설정하기 전에, 다음에 나타날 화면에서 Vinyl Music Player가 시스템 설정을 수정할 수 있도록 허용해 주세요.</string>
     <string name="action_scan_directory">디렉터리 스캔</string>
-    <string name="scan_media">미디어 스캔</string>
     <string name="reset_discography">라이브러리 재스캔</string>
     <string name="none">없음</string>
     <string name="track">트랙</string>

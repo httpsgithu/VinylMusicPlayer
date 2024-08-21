@@ -13,11 +13,12 @@
 
 package com.poupa.vinylmusicplayer.service;
 
+import static com.poupa.vinylmusicplayer.service.MusicService.VINYL_MUSIC_PLAYER_PACKAGE_NAME;
+
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.os.PowerManager;
@@ -29,8 +30,6 @@ import androidx.core.content.ContextCompat;
 
 import com.poupa.vinylmusicplayer.BuildConfig;
 
-import static com.poupa.vinylmusicplayer.service.MusicService.VINYL_MUSIC_PLAYER_PACKAGE_NAME;
-
 /**
  * Used to control headset playback.
  * Single press: pause/resume
@@ -38,7 +37,7 @@ import static com.poupa.vinylmusicplayer.service.MusicService.VINYL_MUSIC_PLAYER
  * Triple press: previous track
  */
 public class MediaButtonIntentReceiver extends BroadcastReceiver {
-    private static final boolean DEBUG = BuildConfig.DEBUG;
+    static final boolean DEBUG = BuildConfig.DEBUG;
     public static final String TAG = MediaButtonIntentReceiver.class.getSimpleName();
 
     private static final int MSG_HEADSET_DOUBLE_CLICK_TIMEOUT = 2;
@@ -166,24 +165,10 @@ public class MediaButtonIntentReceiver extends BroadcastReceiver {
         return false;
     }
 
-    private static void startService(Context context, String command) {
+    static void startService(Context context, String command) {
         final Intent intent = new Intent(context, MusicService.class);
         intent.setAction(command);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(intent);
-        } else {
-            try {
-                // IMPORTANT NOTE: (kind of a hack)
-                // on Android O and above the following crashes when the app is not running
-                // there is no good way to check whether the app is running so we catch the exception
-                // we do not always want to use startForegroundService() because then one gets an ANR
-                // if no notification is displayed via startForeground()
-                // according to Play analytics this happens a lot, I suppose for example if command = PAUSE
-                context.startService(intent);
-            } catch (IllegalStateException ignored) {
-                ContextCompat.startForegroundService(context, intent);
-            }
-        }
+        ContextCompat.startForegroundService(context, intent);
     }
 
     private static void acquireWakeLockAndSendMessage(Context context, Message msg, long delay) {
@@ -200,7 +185,7 @@ public class MediaButtonIntentReceiver extends BroadcastReceiver {
         mHandler.sendMessageDelayed(msg, delay);
     }
 
-    private static void releaseWakeLockIfHandlerIdle() {
+    static void releaseWakeLockIfHandlerIdle() {
         if (mHandler.hasMessages(MSG_HEADSET_DOUBLE_CLICK_TIMEOUT)) {
             if (DEBUG) Log.v(TAG, "Handler still has messages pending, not releasing wake lock");
             return;

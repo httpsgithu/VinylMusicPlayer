@@ -1,41 +1,43 @@
 package com.poupa.vinylmusicplayer.util;
 
 import android.app.Activity;
-import android.content.ContentResolver;
+import android.app.PendingIntent;
 import android.content.ContentUris;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
+import android.os.Build.VERSION_CODES;
 import android.provider.BaseColumns;
 import android.provider.MediaStore;
 import android.text.TextUtils;
-import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.FileProvider;
+import androidx.fragment.app.Fragment;
 
+import com.poupa.vinylmusicplayer.App;
 import com.poupa.vinylmusicplayer.R;
-import com.poupa.vinylmusicplayer.discog.Discography;
 import com.poupa.vinylmusicplayer.discog.tagging.MultiValuesTagUtil;
 import com.poupa.vinylmusicplayer.helper.MusicPlayerRemote;
-import com.poupa.vinylmusicplayer.loader.PlaylistLoader;
 import com.poupa.vinylmusicplayer.model.Album;
 import com.poupa.vinylmusicplayer.model.Artist;
 import com.poupa.vinylmusicplayer.model.Genre;
 import com.poupa.vinylmusicplayer.model.Playlist;
 import com.poupa.vinylmusicplayer.model.Song;
 import com.poupa.vinylmusicplayer.model.lyrics.AbsSynchronizedLyrics;
+import com.poupa.vinylmusicplayer.provider.StaticPlaylist;
 import com.poupa.vinylmusicplayer.service.MusicService;
 
-import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.FieldKey;
+import org.jaudiotagger.tag.images.Artwork;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -45,10 +47,30 @@ import java.util.regex.Pattern;
  * @author Karim Abou Zeid (kabouzeid)
  */
 public class MusicUtil {
-    public static Uri getMediaStoreAlbumCoverUri(long albumId) {
-        final Uri sArtworkUri = Uri.parse("content://media/external/audio/albumart");
+    public static @Nullable Bitmap getMediaStoreAlbumCover(@NonNull final Song song) {
+        final Context context = App.getStaticContext();
+        try (AutoCloseAudioFile audio = SAFUtil.loadReadOnlyAudioFile(context, song)) {
+            return getMediaStoreAlbumCover(audio);
+        } catch (Exception e) {
+            OopsHandler.collectStackTrace(e);
+            return null;
+        }
+    }
 
-        return ContentUris.withAppendedId(sArtworkUri, albumId);
+    public static @Nullable Bitmap getMediaStoreAlbumCover(@Nullable final AutoCloseAudioFile audio) {
+        try {
+            if (audio == null) {
+                return null;
+            }
+            final Artwork artworkTag = audio.get().getTagOrCreateAndSetDefault().getFirstArtwork();
+            if (artworkTag != null) {
+                final byte[] artworkBinaryData = artworkTag.getBinaryData();
+                return BitmapFactory.decodeByteArray(artworkBinaryData, 0, artworkBinaryData.length);
+            }
+            return null;
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     public static Uri getSongFileUri(long songId) {
@@ -66,38 +88,38 @@ public class MusicUtil {
         } catch (IllegalArgumentException e) {
             // TODO the path is most likely not like /storage/emulated/0/... but something like /storage/28C7-75B0/...
             e.printStackTrace();
-            Toast.makeText(context, "Could not share this file, I'm aware of the issue.", Toast.LENGTH_SHORT).show();
+            SafeToast.show(context, "Could not share this file, I'm aware of the issue.");
             return new Intent();
         }
     }
 
     @NonNull
     public static String getArtistInfoString(@NonNull final Context context, @NonNull final Artist artist) {
-        int albumCount = artist.getAlbumCount();
-        int songCount = artist.getSongCount();
+        final int albumCount = artist.getAlbumCount();
+        final int songCount = artist.getSongCount();
 
-        return MusicUtil.buildInfoString(
-            MusicUtil.getAlbumCountString(context, albumCount),
-            MusicUtil.getSongCountString(context, songCount)
+        return buildInfoString(
+            getAlbumCountString(context, albumCount),
+            getSongCountString(context, songCount)
         );
     }
 
     @NonNull
     public static String getAlbumInfoString(@NonNull final Context context, @NonNull final Album album) {
-        int songCount = album.getSongCount();
+        final int songCount = album.getSongCount();
 
-        return MusicUtil.buildInfoString(
-            album.getArtistName(),
-            MusicUtil.getSongCountString(context, songCount)
+        return buildInfoString(
+            MultiValuesTagUtil.infoStringAsArtists(album.getArtistNames()),
+            getSongCountString(context, songCount)
         );
     }
 
     @NonNull
     public static String getSongInfoString(@NonNull final Song song) {
-        return MusicUtil.buildInfoString(
-                PreferenceUtil.getInstance().showSongNumber() ? MusicUtil.getTrackNumberInfoString(song) : null,
-                MultiValuesTagUtil.infoString(song.artistNames),
-                song.albumName
+        return buildInfoString(
+                PreferenceUtil.getInstance().showSongNumber() ? getTrackNumberInfoString(song) : null,
+                MultiValuesTagUtil.infoStringAsArtists(song.artistNames),
+                Album.getTitle(song.albumName)
         );
     }
 
@@ -108,12 +130,12 @@ public class MusicUtil {
     }
 
     @NonNull
-    public static String getPlaylistInfoString(@NonNull final Context context, @NonNull List<Song> songs) {
+    public static String getPlaylistInfoString(@NonNull final Context context, @NonNull List<? extends Song> songs) {
         final long duration = getTotalDuration(songs);
 
-        return MusicUtil.buildInfoString(
-            MusicUtil.getSongCountString(context, songs.size()),
-            MusicUtil.getReadableDurationString(duration)
+        return buildInfoString(
+            getSongCountString(context, songs.size()),
+            getReadableDurationString(duration)
         );
     }
 
@@ -134,7 +156,7 @@ public class MusicUtil {
         return year > 0 ? String.valueOf(year) : "-";
     }
 
-    public static long getTotalDuration(@NonNull List<Song> songs) {
+    public static long getTotalDuration(@NonNull List<? extends Song> songs) {
         long duration = 0;
         for (int i = 0; i < songs.size(); i++) {
             duration += songs.get(i).duration;
@@ -161,19 +183,24 @@ public class MusicUtil {
      * Ex: for a given album --> buildInfoString(album.artist, album.songCount)
      */
     @NonNull
-    public static String buildInfoString(final String... values)
+    public static String buildInfoString(@NonNull final String... values)
     {
-        return MusicUtil.buildInfoString("  •  ", values);
+        return buildInfoString("  •  ", values, null);
     }
 
     @NonNull
-    public static String buildInfoString(@NonNull final String separator, @NonNull final String[] values)
+    public static String buildInfoString(@NonNull final String separator, @NonNull final String[] values, @Nullable final String unknownReplacement)
     {
-        StringBuilder result = new StringBuilder();
-        for (String value : values) {
-            if (TextUtils.isEmpty(value)) continue;
-            if (result.length() > 0) result.append(separator);
-            result.append(value);
+        final StringBuilder result = new StringBuilder();
+        for (final String value : values) {
+            if (!TextUtils.isEmpty(value)) {
+                if (result.length() > 0) result.append(separator);
+
+                final String valueOrReplacement = (unknownReplacement != null) && isNameUnknown(value, unknownReplacement)
+                        ? unknownReplacement
+                        : value;
+                result.append(valueOrReplacement);
+            }
         }
         return result.toString();
     }
@@ -193,49 +220,10 @@ public class MusicUtil {
         return result;
     }
 
-    public static void insertAlbumArt(@NonNull Context context, long albumId, String path, @NonNull final String mimeType) {
-        ContentResolver contentResolver = context.getContentResolver();
-
-        Uri artworkUri = Uri.parse("content://media/external/audio/albumart");
-        contentResolver.delete(ContentUris.withAppendedId(artworkUri, albumId), null, null);
-
-        ContentValues values = new ContentValues();
-        values.put(MediaStore.Audio.AlbumColumns.ALBUM_ID, albumId);
-        values.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
-        values.put(MediaStore.MediaColumns.DATA, path);
-
-        contentResolver.insert(artworkUri, values);
-    }
-
-    public static void deleteAlbumArt(@NonNull Context context, long albumId) {
-        ContentResolver contentResolver = context.getContentResolver();
-        Uri localUri = Uri.parse("content://media/external/audio/albumart");
-        contentResolver.delete(ContentUris.withAppendedId(localUri, albumId), null, null);
-    }
-
-    @NonNull
-    public static File createAlbumArtFile() {
-        return new File(createAlbumArtDir(), String.valueOf(System.currentTimeMillis()));
-    }
-
-    @NonNull
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    public static File createAlbumArtDir() {
-        File albumArtDir = new File(Environment.getExternalStorageDirectory(), "/albumthumbs/");
-        if (!albumArtDir.exists()) {
-            albumArtDir.mkdirs();
-            try {
-                new File(albumArtDir, ".nomedia").createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return albumArtDir;
-    }
-
-    public static void deleteTracks(@NonNull final Activity activity, @NonNull final List<Song> songs, @Nullable final List<Uri> safUris, @Nullable final Runnable callback) {
+    public static void deleteTracks(@NonNull final Fragment fragment, ActivityResultLauncher<IntentSenderRequest> deleteRequestApi30, @NonNull final List<Song> songs, @Nullable final List<Uri> safUris) {
         final int songCount = songs.size();
-        final Discography discography = Discography.getInstance();
+
+        Activity activity = fragment.requireActivity();
 
         try {
             // Step 1: Remove selected tracks from the current playlist
@@ -255,25 +243,36 @@ public class MusicUtil {
             activity.getContentResolver().delete(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                     selection.toString(), null);
 
-            // Step 3: Remove files from card - Android Q takes care of this if the element is remove via MediaStore
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            // Step 3: Remove files from card
+            if (Build.VERSION.SDK_INT < VERSION_CODES.Q) {
                 for (int i = 0; i < songCount; i++) {
                     final Uri safUri = safUris == null || safUris.size() <= i ? null : safUris.get(i);
                     SAFUtil.delete(activity, songs.get(i).data, safUri);
                 }
             }
-        } catch (SecurityException e) {
-            e.printStackTrace();
+            else if (Build.VERSION.SDK_INT == VERSION_CODES.Q) {
+                // Android Q takes care of this if the element is remove via MediaStore
+            }
+            else { // Android R and after
+                List<Uri> urisToDelete = new ArrayList<>();
+                for (Song song: songs) {
+                    // See: https://stackoverflow.com/questions/64472765/java-lang-illegalargumentexception-all-requested-items-must-be-referenced-by-sp
+                    urisToDelete.add(ContentUris.withAppendedId(MediaStore.Audio.Media.getContentUri("external"), song.id));
+                }
+                PendingIntent editPendingIntent = MediaStore.createDeleteRequest(activity.getContentResolver(),
+                        urisToDelete);
+
+                deleteRequestApi30.launch(new IntentSenderRequest.Builder(editPendingIntent).build());
+            }
+        } catch (SecurityException e) { // | SendIntentException e) {
+            OopsHandler.collectStackTrace(e);
         }
 
-        activity.getContentResolver().notifyChange(Uri.parse("content://media"), null);
+        if (Build.VERSION.SDK_INT < VERSION_CODES.R) {
+            activity.getContentResolver().notifyChange(Uri.parse("content://media"), null);
 
-        activity.runOnUiThread(() -> {
-            Toast.makeText(activity, activity.getString(R.string.deleted_x_songs, songCount), Toast.LENGTH_SHORT).show();
-            if (callback != null) {
-                callback.run();
-            }
-        });
+            SafeToast.show(activity, activity.getString(R.string.deleted_x_songs, songCount));
+        }
     }
 
     public static boolean isFavoritePlaylist(@NonNull final Context context, @NonNull final Playlist playlist) {
@@ -284,20 +283,25 @@ public class MusicUtil {
         return playlistName.equals(context.getString(R.string.favorites));
     }
 
+    @Nullable
     public static Playlist getFavoritesPlaylist(@NonNull final Context context) {
-        return PlaylistLoader.getPlaylist(context, context.getString(R.string.favorites));
+        StaticPlaylist playlist = StaticPlaylist.getPlaylist(context.getString(R.string.favorites));
+        if (playlist != null) {return playlist.asPlaylist();}
+        return null;
     }
 
     private static Playlist getOrCreateFavoritesPlaylist(@NonNull final Context context) {
-        return PlaylistLoader.getPlaylist(context, PlaylistsUtil.createPlaylist(context, context.getString(R.string.favorites)));
+        return StaticPlaylist.getOrCreatePlaylist(context.getString(R.string.favorites)).asPlaylist();
     }
 
     public static Playlist getOrCreateSkippedPlaylist(@NonNull final Context context) {
-        return PlaylistLoader.getPlaylist(context, PlaylistsUtil.createPlaylist(context, context.getString(R.string.skipped_songs)));
+        return StaticPlaylist.getOrCreatePlaylist(context.getString(R.string.skipped_songs)).asPlaylist();
     }
 
     public static boolean isFavorite(@NonNull final Context context, @NonNull final Song song) {
-        return PlaylistsUtil.doesPlaylistContain(context, getFavoritesPlaylist(context).id, song.id);
+        Playlist playlist = getFavoritesPlaylist(context);
+        if (playlist == null) {return false;}
+        return PlaylistsUtil.doesPlaylistContain(playlist.id, song.id);
     }
 
     public static void toggleFavorite(@NonNull final Context context, @NonNull final Song song) {
@@ -322,24 +326,37 @@ public class MusicUtil {
         return isNameUnknown(genreName, Genre.UNKNOWN_GENRE_DISPLAY_NAME);
     }
 
+    public static boolean isSongTitleUnknown(@Nullable String title) {
+        return isNameUnknown(title, Song.UNTITLED_DISPLAY_NAME);
+    }
+
     private static boolean isNameUnknown(@Nullable String name, @NonNull final String defaultDisplayName) {
-        if ((name == null) || (name.length() == 0)) return true;
+        if (TextUtils.isEmpty(name)) return true;
         if (name.equals(defaultDisplayName)) return true;
-        name = name.trim().toLowerCase();
-        return (name.equals("unknown") || name.equals("<unknown>"));
+        final String normName = name.trim().toLowerCase();
+        return (normName.equals("unknown") || normName.equals("<unknown>") ||
+                normName.equals("untitled") || normName.equals("(untitled)")
+        );
     }
 
     @NonNull
-    public static String getSectionName(@Nullable String musicMediaTitle) {
-        if ((musicMediaTitle == null) || (musicMediaTitle.length() == 0)) return "";
-        musicMediaTitle = musicMediaTitle.trim().toLowerCase();
-        if (musicMediaTitle.startsWith("the ")) {
-            musicMediaTitle = musicMediaTitle.substring(4);
-        } else if (musicMediaTitle.startsWith("a ")) {
-            musicMediaTitle = musicMediaTitle.substring(2);
+    public static String getNameWithoutArticle(@Nullable final String title) {
+        if (TextUtils.isEmpty(title)) {return "";}
+
+        String strippedTitle = title.trim();
+
+        final List<String> articles = List.of(
+                "a ", "an ", "the ", // English ones
+                "l'", "le ", "la ", "les " // French ones
+        );
+        String lowerCaseTitle = strippedTitle.toLowerCase();
+        for (final String article : articles) {
+            if (lowerCaseTitle.startsWith(article)) {
+                strippedTitle = strippedTitle.substring(article.length());
+                break;
+            }
         }
-        if (musicMediaTitle.isEmpty()) return "";
-        return String.valueOf(musicMediaTitle.charAt(0)).toUpperCase();
+        return strippedTitle;
     }
 
     public static int indexOfSongInList(List<Song> songs, long songId) {
@@ -352,51 +369,51 @@ public class MusicUtil {
     }
 
     @Nullable
-    public static String getLyrics(Song song) {
+    public static String getLyrics(@NonNull final Context context, @NonNull final Song song) {
+        if (song.id == Song.EMPTY_SONG.id) {return null;}
+
         String lyrics = null;
-
-        File file = new File(song.data);
-
-        try {
-            lyrics = AudioFileIO.read(file).getTagOrCreateDefault().getFirst(FieldKey.LYRICS);
+        try (AutoCloseAudioFile audio = SAFUtil.loadReadOnlyAudioFile(context, song)) {
+            lyrics = audio.get().getTagOrCreateDefault().getFirst(FieldKey.LYRICS);
         } catch (@NonNull Exception | NoSuchMethodError | VerifyError e) {
-            e.printStackTrace();
+            OopsHandler.collectStackTrace(e);
         }
 
         if (lyrics == null || lyrics.trim().isEmpty() || !AbsSynchronizedLyrics.isSynchronized(lyrics)) {
-            File dir = file.getAbsoluteFile().getParentFile();
+            try {
+                File file = new File(song.data);
+                File dir = file.getAbsoluteFile().getParentFile();
 
-            if (dir != null && dir.exists() && dir.isDirectory()) {
-                String format = ".*%s.*\\.(lrc|txt)";
-                String filename = Pattern.quote(FileUtil.stripExtension(file.getName()));
-                String songTitle = Pattern.quote(song.title);
+                if (dir != null && dir.exists() && dir.isDirectory()) {
+                    String format = ".*%s.*\\.(lrc|txt)";
+                    String filename = Pattern.quote(FileUtil.stripExtension(file.getName()));
+                    String songTitle = Pattern.quote(song.title);
 
-                final ArrayList<Pattern> patterns = new ArrayList<>();
-                patterns.add(Pattern.compile(String.format(format, filename), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE));
-                patterns.add(Pattern.compile(String.format(format, songTitle), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE));
+                    final ArrayList<Pattern> patterns = new ArrayList<>();
+                    patterns.add(Pattern.compile(String.format(format, filename), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE));
+                    patterns.add(Pattern.compile(String.format(format, songTitle), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE));
 
-                File[] files = dir.listFiles(f -> {
-                    for (Pattern pattern : patterns) {
-                        if (pattern.matcher(f.getName()).matches()) return true;
-                    }
-                    return false;
-                });
+                    File[] files = dir.listFiles(f -> {
+                        for (Pattern pattern : patterns) {
+                            if (pattern.matcher(f.getName()).matches()) return true;
+                        }
+                        return false;
+                    });
 
-                if (files != null && files.length > 0) {
-                    for (File f : files) {
-                        try {
+                    if (files != null && files.length > 0) {
+                        for (File f : files) {
                             String newLyrics = FileUtil.read(f);
-                            if (newLyrics != null && !newLyrics.trim().isEmpty()) {
+                            if (!newLyrics.trim().isEmpty()) {
                                 if (AbsSynchronizedLyrics.isSynchronized(newLyrics)) {
                                     return newLyrics;
                                 }
                                 lyrics = newLyrics;
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace();
                         }
                     }
                 }
+            } catch (Exception e) {
+                OopsHandler.collectStackTrace(e);
             }
         }
 

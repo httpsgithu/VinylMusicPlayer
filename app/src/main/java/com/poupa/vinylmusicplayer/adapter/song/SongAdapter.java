@@ -12,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.util.Pair;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.afollestad.materialcab.MaterialCab;
 import com.kabouzeid.appthemehelper.util.ColorUtil;
 import com.kabouzeid.appthemehelper.util.MaterialValueHelper;
 import com.poupa.vinylmusicplayer.R;
@@ -22,12 +21,13 @@ import com.poupa.vinylmusicplayer.databinding.ItemGridBinding;
 import com.poupa.vinylmusicplayer.databinding.ItemListBinding;
 import com.poupa.vinylmusicplayer.databinding.ItemListSingleRowBinding;
 import com.poupa.vinylmusicplayer.helper.MusicPlayerRemote;
-import com.poupa.vinylmusicplayer.sort.SongSortOrder;
-import com.poupa.vinylmusicplayer.sort.SortOrder;
 import com.poupa.vinylmusicplayer.helper.menu.SongMenuHelper;
 import com.poupa.vinylmusicplayer.helper.menu.SongsMenuHelper;
-import com.poupa.vinylmusicplayer.interfaces.CabHolder;
+import com.poupa.vinylmusicplayer.interfaces.PaletteColorHolder;
 import com.poupa.vinylmusicplayer.model.Song;
+import com.poupa.vinylmusicplayer.sort.SongSortOrder;
+import com.poupa.vinylmusicplayer.sort.SortOrder;
+import com.poupa.vinylmusicplayer.ui.activities.base.AbsThemeActivity;
 import com.poupa.vinylmusicplayer.util.ImageTheme.ThemeStyleUtil;
 import com.poupa.vinylmusicplayer.util.MusicUtil;
 import com.poupa.vinylmusicplayer.util.NavigationUtil;
@@ -36,14 +36,20 @@ import com.poupa.vinylmusicplayer.util.PreferenceUtil;
 import com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Karim Abou Zeid (kabouzeid)
  */
-public class SongAdapter extends AbsMultiSelectAdapter<SongAdapter.ViewHolder, Song> implements MaterialCab.Callback, FastScrollRecyclerView.SectionedAdapter {
+public class SongAdapter
+        extends AbsMultiSelectAdapter<SongAdapter.ViewHolder, Song>
+        implements FastScrollRecyclerView.SectionedAdapter
+{
 
     protected final AppCompatActivity activity;
-    protected ArrayList<Song> dataSet;
+    protected List<? extends Song> dataSet;
 
     protected final int itemLayoutRes;
 
@@ -53,12 +59,14 @@ public class SongAdapter extends AbsMultiSelectAdapter<SongAdapter.ViewHolder, S
 
     public RecyclerView recyclerView;
 
-    public SongAdapter(AppCompatActivity activity, ArrayList<Song> dataSet, @LayoutRes int itemLayoutRes, boolean usePalette, @Nullable CabHolder cabHolder) {
-        this(activity, dataSet, itemLayoutRes, usePalette, cabHolder, true);
+    public SongAdapter(@NonNull final AbsThemeActivity activity, List<? extends Song> dataSet, @LayoutRes int itemLayoutRes,
+                       boolean usePalette, @Nullable PaletteColorHolder palette) {
+        this(activity, dataSet, itemLayoutRes, usePalette, palette, true);
     }
 
-    public SongAdapter(AppCompatActivity activity, ArrayList<Song> dataSet, @LayoutRes int itemLayoutRes, boolean usePalette, @Nullable CabHolder cabHolder, boolean showSectionName) {
-        super(activity, cabHolder, R.menu.menu_media_selection);
+    public SongAdapter(@NonNull final AbsThemeActivity activity, List<? extends Song> dataSet, @LayoutRes int itemLayoutRes,
+                       boolean usePalette, @Nullable PaletteColorHolder palette, boolean showSectionName) {
+        super(activity, palette, R.menu.menu_media_selection);
         this.activity = activity;
         this.dataSet = dataSet;
         this.itemLayoutRes = itemLayoutRes;
@@ -73,7 +81,7 @@ public class SongAdapter extends AbsMultiSelectAdapter<SongAdapter.ViewHolder, S
         recyclerView = rV;
     }
 
-    public void swapDataSet(ArrayList<Song> dataSet) {
+    public void swapDataSet(List<? extends Song> dataSet) {
         this.dataSet = dataSet;
         notifyDataSetChanged();
     }
@@ -91,7 +99,7 @@ public class SongAdapter extends AbsMultiSelectAdapter<SongAdapter.ViewHolder, S
         return this.showAlbumImage;
     }
 
-    public ArrayList<Song> getDataSet() {
+    public List<? extends Song> getDataSet() {
         return dataSet;
     }
 
@@ -136,11 +144,10 @@ public class SongAdapter extends AbsMultiSelectAdapter<SongAdapter.ViewHolder, S
     public void onBindViewHolder(@NonNull final ViewHolder holder, int position) {
         final Song song = dataSet.get(position);
 
-        boolean isChecked = isChecked(song);
-        holder.itemView.setActivated(isChecked);
+        holder.itemView.setActivated(isChecked(position));
 
         if (holder.shortSeparator != null) {
-            if (holder.getAdapterPosition() == getItemCount() - 1) {
+            if (holder.getBindingAdapterPosition() == getItemCount() - 1) {
                 holder.shortSeparator.setVisibility(View.GONE);
             } else {
                 holder.shortSeparator.setVisibility(ThemeStyleUtil.getInstance().getShortSeparatorVisibilityState());
@@ -148,7 +155,7 @@ public class SongAdapter extends AbsMultiSelectAdapter<SongAdapter.ViewHolder, S
         }
 
         if (holder.title != null) {
-            holder.title.setText(song.title);
+            holder.title.setText(song.getTitle());
         }
         if (holder.text != null) {
             holder.text.setText(getSongText(song));
@@ -169,7 +176,8 @@ public class SongAdapter extends AbsMultiSelectAdapter<SongAdapter.ViewHolder, S
         }
     }
 
-    protected String getSongText(Song song) {
+    @NonNull
+    protected String getSongText(@NonNull final Song song) {
         return MusicUtil.getSongInfoString(song);
     }
 
@@ -184,13 +192,11 @@ public class SongAdapter extends AbsMultiSelectAdapter<SongAdapter.ViewHolder, S
     }
 
     @Override
-    protected String getName(Song song) {
-        return song.title;
-    }
-
-    @Override
-    protected void onMultipleItemAction(@NonNull MenuItem menuItem, @NonNull ArrayList<Song> selection) {
-        SongsMenuHelper.handleMenuClick(activity, selection, menuItem.getItemId());
+    protected void onMultipleItemAction(@NonNull final MenuItem menuItem, @NonNull final Map<Integer, Song> selection) {
+        // Intermediate copy to preserve the selection order
+        Collection<Song> songs = new ArrayList<>();
+        selection.values().iterator().forEachRemaining(song -> songs.add(song));
+        SongsMenuHelper.handleMenuClick(activity, songs, menuItem.getItemId());
     }
 
     @NonNull
@@ -256,10 +262,10 @@ public class SongAdapter extends AbsMultiSelectAdapter<SongAdapter.ViewHolder, S
         }
 
         protected Song getSong() {
-            final int position = getAdapterPosition();
+            final int position = getBindingAdapterPosition();
             if (position < 0 || position >= dataSet.size()) {return Song.EMPTY_SONG;}
 
-            return dataSet.get(getAdapterPosition());
+            return dataSet.get(position);
         }
 
         protected int getSongMenuRes() {
@@ -280,15 +286,15 @@ public class SongAdapter extends AbsMultiSelectAdapter<SongAdapter.ViewHolder, S
         @Override
         public void onClick(View v) {
             if (isInQuickSelectMode()) {
-                toggleChecked(getAdapterPosition());
+                toggleChecked(getBindingAdapterPosition());
             } else {
-                MusicPlayerRemote.openQueue(dataSet, getAdapterPosition(), true);
+                MusicPlayerRemote.enqueueSongsWithConfirmation(v.getContext(), dataSet, getBindingAdapterPosition());
             }
         }
 
         @Override
         public boolean onLongClick(View view) {
-            return toggleChecked(getAdapterPosition());
+            return toggleChecked(getBindingAdapterPosition());
         }
     }
 }

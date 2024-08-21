@@ -107,6 +107,7 @@
     <string name="pref_header_colors">颜色</string>
     <string name="pref_header_now_playing_screen">正在播放界面</string>
     <string name="pref_title_general_theme">全局主题</string>
+    <string name="pref_header_album">专辑</string>
     <string name="pref_header_audio">声音</string>
     <string name="pref_header_images">图片</string>
     <string name="pref_header_lockscreen">锁屏</string>
@@ -114,12 +115,12 @@
     <string name="pref_header_notification">通知</string>
     <string name="pref_title_navigation_bar">着色导航栏</string>
     <string name="pref_title_app_shortcuts">着色应用快捷方式</string>
-    <string name="pref_title_album_art_on_lockscreen">显示专辑封面</string>
+<!--    <string name="pref_title_album_art_on_lockscreen">显示专辑封面</string>-->
     <string name="pref_title_auto_download_metadata">自动下载元数据</string>
-    <string name="pref_title_blurred_album_art">专辑封面模糊化</string>
+<!--    <string name="pref_title_blurred_album_art">专辑封面模糊化</string>-->
     <string name="pref_title_colored_notification">启用通知背景着色</string>
     <string name="pref_title_classic_notification">经典通知样式</string>
-    <string name="pref_title_ignore_media_store_artwork">忽略媒体储存中的专辑封面</string>
+    <!--string name="pref_title_ignore_media_store_artwork">忽略媒体储存中的专辑封面</string-->
     <string name="pref_title_gapless_playback">无缝播放</string>
     <string name="pref_title_audio_ducking">音频焦点丢失时降低音量</string>
     <string name="pref_title_last_added_interval">最近添加播放列表间隔</string>
@@ -145,12 +146,12 @@
     <string name="empty">空</string>
     <string name="playlist_name_empty">播放列表名称</string>
     <string name="song">歌曲</string>
-    <string name="pref_summary_album_art_on_lockscreen">使用当前播放曲目的专辑封面作为锁屏壁纸。</string>
-    <string name="pref_summary_blurred_album_art">模糊化显示锁屏界面内的专辑封面。此功能或与第三方应用及桌面插件产生冲突。</string>
+<!--    <string name="pref_summary_album_art_on_lockscreen">使用当前播放曲目的专辑封面作为锁屏壁纸。</string>-->
+<!--    <string name="pref_summary_blurred_album_art">模糊化显示锁屏界面内的专辑封面。此功能或与第三方应用及桌面插件产生冲突。</string>-->
     <string name="pref_summary_classic_notification">使用经典通知样式。</string>
     <string name="pref_summary_colored_notification">"\u4f7f\u7528\u4e0e\u4e13\u8f91\u5c01\u9762\u76f8\u5339\u914d\u7684\u989c\u8272\u7740\u8272\u901a\u77e5\u80cc\u666f\u8272\u3002"</string>
     <string name="pref_summary_gapless_playback">"在某些设备上会造成播放问题。"</string>
-    <string name="pref_summary_ignore_media_store_artwork">可以提高专辑封面图片的质量但加载时间也会更长。仅当遇到专辑封面像素过低时建议开启。</string>
+    <!--string name="pref_summary_ignore_media_store_artwork">可以提高专辑封面图片的质量但加载时间也会更长。仅当遇到专辑封面像素过低时建议开启。</string-->
     <string name="pref_summary_colored_navigation_bar">用主色调着色导航栏。</string>
     <string name="pref_summary_colored_app_shortcuts">用主色调着色应用快捷方式。</string>
     <string name="pref_summary_audio_ducking">通知、导航等</string>
@@ -174,6 +175,7 @@
     <string name="new_playlist_title">新建播放列表</string>
     <string name="colored_footers">着色页脚</string>
     <string name="special_thanks_to">特别鸣谢</string>
+    <string name="show_footer">显示页脚</string>
     <string name="changelog">更新日志</string>
     <string name="licenses">许可信息</string>
     <string name="permissions_denied">未能获取权限。</string>
@@ -256,7 +258,6 @@
     <string name="pref_summary_library_categories">配置媒体库类别可见性和顺序。</string>
     <string name="you_have_to_select_at_least_one_category">您必需选择至少一个类别。</string>
     <string name="action_scan_directory">扫描音乐</string>
-    <string name="scan_media">扫描音乐</string>
     <string name="action_sort_order">排序方式</string>
     <string name="sort_order_name">按首字符（正序）</string>
     <string name="sort_order_name_reverse">按首字符（倒序）</string>
@@ -303,8 +304,6 @@
     <string name="saved_x_playlists_to_x">将%1$d播放列表保存到%2$s。</string>
     <string name="saved_x_playlists_to_x_failed_to_save_x">将%1$d播放列表保存到%2$s，保存到%3$d时失败。</string>
     <string name="some_files_are_not_listed_in_the_media_store">有些文件未在媒体库中列出。</string>
-    <string name="scanning_x_songs_in_progress">正在更新%1$d首歌曲……</string>
-    <string name="scanning_x_songs_finished">已更新%1$d首歌曲</string>
     <string name="deleting_songs">正在删除歌曲</string>
     <string name="snack_bar_action_undo">撤销操作</string>
     <string name="snack_bar_title_removed_song">已删除</string>

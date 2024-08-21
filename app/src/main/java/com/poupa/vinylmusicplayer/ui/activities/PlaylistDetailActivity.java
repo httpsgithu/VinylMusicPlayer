@@ -2,19 +2,18 @@ package com.poupa.vinylmusicplayer.ui.activities;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
-import androidx.appcompat.widget.Toolbar;
 import androidx.loader.app.LoaderManager;
 import androidx.loader.content.Loader;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.afollestad.materialcab.MaterialCab;
 import com.h6ah4i.android.widget.advrecyclerview.animator.GeneralItemAnimator;
 import com.h6ah4i.android.widget.advrecyclerview.animator.RefactoredDefaultItemAnimator;
 import com.h6ah4i.android.widget.advrecyclerview.draggable.RecyclerViewDragDropManager;
@@ -28,46 +27,50 @@ import com.poupa.vinylmusicplayer.adapter.song.PlaylistSongAdapter;
 import com.poupa.vinylmusicplayer.adapter.song.SongAdapter;
 import com.poupa.vinylmusicplayer.databinding.ActivityPlaylistDetailBinding;
 import com.poupa.vinylmusicplayer.databinding.SlidingMusicPanelLayoutBinding;
-import com.poupa.vinylmusicplayer.helper.MusicPlayerRemote;
 import com.poupa.vinylmusicplayer.helper.menu.MenuHelper;
 import com.poupa.vinylmusicplayer.helper.menu.PlaylistMenuHelper;
-import com.poupa.vinylmusicplayer.interfaces.CabHolder;
 import com.poupa.vinylmusicplayer.interfaces.LoaderIds;
-import com.poupa.vinylmusicplayer.loader.PlaylistLoader;
+import com.poupa.vinylmusicplayer.interfaces.PaletteColorHolder;
 import com.poupa.vinylmusicplayer.misc.WrappedAsyncTaskLoader;
 import com.poupa.vinylmusicplayer.model.AbsCustomPlaylist;
 import com.poupa.vinylmusicplayer.model.Playlist;
 import com.poupa.vinylmusicplayer.model.Song;
+import com.poupa.vinylmusicplayer.model.smartplaylist.AbsSmartPlaylist;
+import com.poupa.vinylmusicplayer.model.smartplaylist.LastAddedPlaylist;
+import com.poupa.vinylmusicplayer.model.smartplaylist.NotRecentlyPlayedPlaylist;
+import com.poupa.vinylmusicplayer.provider.StaticPlaylist;
 import com.poupa.vinylmusicplayer.ui.activities.base.AbsSlidingMusicPanelActivity;
 import com.poupa.vinylmusicplayer.util.PlaylistsUtil;
+import com.poupa.vinylmusicplayer.util.PreferenceUtil;
 import com.poupa.vinylmusicplayer.util.ViewUtil;
-import com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView;
 
 import java.util.ArrayList;
+import java.util.List;
 
-public class PlaylistDetailActivity extends AbsSlidingMusicPanelActivity implements CabHolder, LoaderManager.LoaderCallbacks<ArrayList<Song>> {
+public class PlaylistDetailActivity
+        extends AbsSlidingMusicPanelActivity
+        implements
+            LoaderManager.LoaderCallbacks<List<? extends Song>>
+{
 
     private static final int LOADER_ID = LoaderIds.PLAYLIST_DETAIL_ACTIVITY;
 
     @NonNull
     public static final String EXTRA_PLAYLIST = "extra_playlist";
 
-    RecyclerView recyclerView;
-    Toolbar toolbar;
-    TextView empty;
-    TextView titleTextView;
+    private ActivityPlaylistDetailBinding layoutBinding;
 
     private Playlist playlist;
 
-    private MaterialCab cab;
     private SongAdapter adapter;
 
     private RecyclerView.Adapter wrappedAdapter;
     private RecyclerViewDragDropManager recyclerViewDragDropManager;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setDrawUnderStatusbar();
 
         setStatusbarColorAuto();
@@ -85,42 +88,52 @@ public class PlaylistDetailActivity extends AbsSlidingMusicPanelActivity impleme
 
     @Override
     protected View createContentView() {
-        SlidingMusicPanelLayoutBinding slidingPanelBinding = createSlidingMusicPanel();
-        ActivityPlaylistDetailBinding binding = ActivityPlaylistDetailBinding.inflate(
+        final SlidingMusicPanelLayoutBinding slidingPanelBinding = createSlidingMusicPanel();
+        layoutBinding = ActivityPlaylistDetailBinding.inflate(
                 getLayoutInflater(),
                 slidingPanelBinding.contentContainer,
                 true);
-
-        recyclerView = binding.recyclerView;
-        toolbar = binding.toolbar;
-        empty = binding.empty;
-        titleTextView = binding.title;
 
         return slidingPanelBinding.getRoot();
     }
 
     private void setUpRecyclerView() {
-        ViewUtil.setUpFastScrollRecyclerViewColor(this, ((FastScrollRecyclerView) recyclerView), ThemeStore.accentColor(this));
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        ViewUtil.setUpFastScrollRecyclerViewColor(
+                this,
+                layoutBinding.recyclerView,
+                ThemeStore.accentColor(this));
+        layoutBinding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        final PaletteColorHolder holder = new PaletteColorHolder() {
+            @Override
+            @ColorInt
+            public int getPaletteColor() {return ThemeStore.primaryColor(PlaylistDetailActivity.this);}
+        };
         if (playlist instanceof AbsCustomPlaylist) {
-            adapter = new PlaylistSongAdapter(this, new ArrayList<>(), false, this);
-            recyclerView.setAdapter(adapter);
+            adapter = new PlaylistSongAdapter(this, new ArrayList<>(), false, holder);
+            layoutBinding.recyclerView.setAdapter(adapter);
         } else {
             recyclerViewDragDropManager = new RecyclerViewDragDropManager();
             final GeneralItemAnimator animator = new RefactoredDefaultItemAnimator();
-            adapter = new OrderablePlaylistSongAdapter(this, new ArrayList<>(), false, this, (fromPosition, toPosition) -> {
-                if (PlaylistsUtil.moveItem(PlaylistDetailActivity.this, playlist.id, fromPosition, toPosition)) {
-                    Song song = adapter.getDataSet().remove(fromPosition);
-                    adapter.getDataSet().add(toPosition, song);
-                    adapter.notifyItemMoved(fromPosition, toPosition);
-                }
-            });
+            adapter = new OrderablePlaylistSongAdapter(
+                    this,
+                    playlist.id,
+                    new ArrayList<>(),
+                    false,
+                    holder,
+                    (fromPosition, toPosition) -> {
+                        if (PlaylistsUtil.moveItem(playlist.id, fromPosition, toPosition)) {
+                            final List<Song> dataSet = (List<Song>)adapter.getDataSet();
+                            final Song song = dataSet.remove(fromPosition);
+                            dataSet.add(toPosition, song);
+                            adapter.notifyItemMoved(fromPosition, toPosition);
+                        }
+                    });
             wrappedAdapter = recyclerViewDragDropManager.createWrappedAdapter(adapter);
 
-            recyclerView.setAdapter(wrappedAdapter);
-            recyclerView.setItemAnimator(animator);
+            layoutBinding.recyclerView.setAdapter(wrappedAdapter);
+            layoutBinding.recyclerView.setItemAnimator(animator);
 
-            recyclerViewDragDropManager.attachRecyclerView(recyclerView);
+            recyclerViewDragDropManager.attachRecyclerView(layoutBinding.recyclerView);
         }
 
         adapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
@@ -133,59 +146,53 @@ public class PlaylistDetailActivity extends AbsSlidingMusicPanelActivity impleme
     }
 
     private void setUpToolbar() {
-        toolbar.setBackgroundColor(ThemeStore.primaryColor(this));
-        setSupportActionBar(toolbar);
+        layoutBinding.toolbar.setBackgroundColor(ThemeStore.primaryColor(this));
+        setSupportActionBar(layoutBinding.toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setToolbarTitle(null);
-        titleTextView.setText(playlist.name);
-
-        titleTextView.setTextColor(MaterialValueHelper.getPrimaryTextColor(this, ColorUtil.isColorLight(ThemeStore.primaryColor(this))));
+        layoutBinding.title.setText(playlist.name);
+        layoutBinding.title.setTextColor(MaterialValueHelper.getPrimaryTextColor(this, ColorUtil.isColorLight(ThemeStore.primaryColor(this))));
     }
 
-    private void setToolbarTitle(String title) {
+    private void setToolbarTitle(final String title) {
         getSupportActionBar().setTitle(title);
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(playlist instanceof AbsCustomPlaylist ? R.menu.menu_smart_playlist_detail : R.menu.menu_playlist_detail, menu);
+    public boolean onCreateOptionsMenu(final Menu menu) {
+        if (playlist instanceof AbsSmartPlaylist smartPlaylist) {
+            getMenuInflater().inflate(R.menu.menu_item_smart_playlist, menu);
+            PlaylistMenuHelper.hideShowSmartPlaylistMenuItems(menu, smartPlaylist);
+        } else {
+            getMenuInflater().inflate(R.menu.menu_item_playlist, menu);
+        }
+
         MenuHelper.decorateDestructiveItems(menu, this);
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+    public boolean onOptionsItemSelected(@NonNull final MenuItem item) {
         final int id = item.getItemId();
-        if (id == R.id.action_shuffle_playlist) {
-            MusicPlayerRemote.openAndShuffleQueue(adapter.getDataSet(), true);
-            return true;
-        } else if (id == android.R.id.home) {
+        if (id == android.R.id.home) {
             onBackPressed();
             return true;
+        } else if (id == R.id.action_song_sort_group_by_album) {
+            item.setChecked(!item.isChecked()); // toggle
+            if (playlist instanceof NotRecentlyPlayedPlaylist) {
+                PreferenceUtil.getInstance().setNotRecentlyPlayedSortOrder(item.isChecked() ? PreferenceUtil.ALBUM_SORT_ORDER : PreferenceUtil.SONG_SORT_ORDER);
+            } else if (playlist instanceof LastAddedPlaylist) {
+                PreferenceUtil.getInstance().setLastAddedSortOrder(item.isChecked() ? PreferenceUtil.ALBUM_SORT_ORDER : PreferenceUtil.SONG_SORT_ORDER);
+            }
+            reload();
         }
         return PlaylistMenuHelper.handleMenuClick(this, playlist, item);
     }
 
-    @NonNull
-    @Override
-    public MaterialCab openCab(final int menu, final MaterialCab.Callback callback) {
-        if (cab != null && cab.isActive()) cab.finish();
-        adapter.setColor(ThemeStore.primaryColor(this));
-        cab = MenuHelper.setOverflowMenu(this, menu, ThemeStore.primaryColor(this))
-                .start(callback);
-
-        MenuHelper.decorateDestructiveItems(cab.getMenu(), this);
-
-        return cab;
-    }
-
     @Override
     public void onBackPressed() {
-        if (cab != null && cab.isActive()) cab.finish();
-        else {
-            recyclerView.stopScroll();
-            super.onBackPressed();
-        }
+        layoutBinding.recyclerView.stopScroll();
+        super.onBackPressed();
     }
 
     @Override
@@ -193,16 +200,17 @@ public class PlaylistDetailActivity extends AbsSlidingMusicPanelActivity impleme
         super.onMediaStoreChanged();
 
         if (!(playlist instanceof AbsCustomPlaylist)) {
+            final StaticPlaylist existingPlaylist = StaticPlaylist.getPlaylist(playlist.id);
+
             // Playlist deleted
-            if (!PlaylistsUtil.doesPlaylistExist(this, playlist.id)) {
+            if (existingPlaylist == null) {
                 finish();
                 return;
             }
 
             // Playlist renamed
-            final String playlistName = PlaylistsUtil.getNameForPlaylist(this, playlist.id);
-            if (!playlistName.equals(playlist.name)) {
-                playlist = PlaylistLoader.getPlaylist(this, playlist.id);
+            if (!TextUtils.equals(existingPlaylist.getName(), playlist.name)) {
+                playlist = existingPlaylist.asPlaylist();
                 setToolbarTitle(playlist.name);
             }
 
@@ -227,8 +235,8 @@ public class PlaylistDetailActivity extends AbsSlidingMusicPanelActivity impleme
         adapter.notifyDataSetChanged();
     }
 
-    private void checkIsEmpty() {
-        empty.setVisibility(
+    void checkIsEmpty() {
+        layoutBinding.empty.setVisibility(
                 adapter.getItemCount() == 0 ? View.VISIBLE : View.GONE
         );
     }
@@ -248,11 +256,8 @@ public class PlaylistDetailActivity extends AbsSlidingMusicPanelActivity impleme
             recyclerViewDragDropManager = null;
         }
 
-        if (recyclerView != null) {
-            recyclerView.setItemAnimator(null);
-            recyclerView.setAdapter(null);
-            recyclerView = null;
-        }
+        layoutBinding.recyclerView.setItemAnimator(null);
+        layoutBinding.recyclerView.setAdapter(null);
 
         if (wrappedAdapter != null) {
             WrapperAdapterUtils.releaseAll(wrappedAdapter);
@@ -265,20 +270,22 @@ public class PlaylistDetailActivity extends AbsSlidingMusicPanelActivity impleme
 
     @Override
     @NonNull
-    public Loader<ArrayList<Song>> onCreateLoader(int id, Bundle args) {
+    public Loader<List<? extends Song>> onCreateLoader(int id, final Bundle args) {
         return new AsyncPlaylistSongLoader(this, playlist);
     }
 
     @Override
-    public void onLoadFinished(@NonNull Loader<ArrayList<Song>> loader, ArrayList<Song> data) {
-        if (adapter != null)
+    public void onLoadFinished(@NonNull final Loader<List<? extends Song>> loader, final List<? extends Song> data) {
+        if (adapter != null) {
             adapter.swapDataSet(data);
+        }
     }
 
     @Override
-    public void onLoaderReset(@NonNull Loader<ArrayList<Song>> loader) {
-        if (adapter != null)
+    public void onLoaderReset(@NonNull final Loader<List<? extends Song>> loader) {
+        if (adapter != null) {
             adapter.swapDataSet(new ArrayList<>());
+        }
     }
 
     @Override
@@ -286,16 +293,17 @@ public class PlaylistDetailActivity extends AbsSlidingMusicPanelActivity impleme
         LoaderManager.getInstance(this).restartLoader(LOADER_ID, null, this);
     }
 
-    private static class AsyncPlaylistSongLoader extends WrappedAsyncTaskLoader<ArrayList<Song>> {
+    private static class AsyncPlaylistSongLoader extends WrappedAsyncTaskLoader<List<? extends Song>> {
         private final Playlist playlist;
 
-        public AsyncPlaylistSongLoader(Context context, Playlist playlist) {
+        AsyncPlaylistSongLoader(final Context context, final Playlist playlist) {
             super(context);
             this.playlist = playlist;
         }
 
+        @NonNull
         @Override
-        public ArrayList<Song> loadInBackground() {
+        public List<? extends Song> loadInBackground() {
             return playlist.getSongs(getContext());
         }
     }

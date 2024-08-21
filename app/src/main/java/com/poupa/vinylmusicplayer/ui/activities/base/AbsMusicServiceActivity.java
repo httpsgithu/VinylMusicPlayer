@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.os.Build;
+import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.os.IBinder;
 
@@ -14,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.poupa.vinylmusicplayer.R;
+import com.poupa.vinylmusicplayer.discog.Discography;
 import com.poupa.vinylmusicplayer.helper.MusicPlayerRemote;
 import com.poupa.vinylmusicplayer.interfaces.MusicServiceEventListener;
 import com.poupa.vinylmusicplayer.service.MusicService;
@@ -48,11 +51,18 @@ public abstract class AbsMusicServiceActivity extends AbsBaseActivity implements
         });
 
         setPermissionDeniedMessage(getString(R.string.permission_external_storage_denied));
+
+        final Discography discog = Discography.getInstance();
+        discog.addActivity(this);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+        final Discography discog = Discography.getInstance();
+        discog.removeActivity(this);
+
         MusicPlayerRemote.unbindFromService(serviceToken);
         if (receiverRegistered) {
             unregisterReceiver(musicStateReceiver);
@@ -215,6 +225,17 @@ public abstract class AbsMusicServiceActivity extends AbsBaseActivity implements
     @Nullable
     @Override
     protected String[] getPermissionsToRequest() {
-        return new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        if (Build.VERSION.SDK_INT < VERSION_CODES.R) { // API less or equal to 29
+            return new String[] { Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE };
+        } else if (Build.VERSION.SDK_INT < VERSION_CODES.TIRAMISU) { // API less than 33
+            return new String[] { Manifest.permission.READ_EXTERNAL_STORAGE };
+        } else {
+            return new String[] {
+                    // Audio is really necessary for the app to work, images is only useful for cover
+                    Manifest.permission.READ_MEDIA_AUDIO, Manifest.permission.READ_MEDIA_IMAGES,
+                    // Post "non-exempt" notifications, ie. those not linked to media session/foreground service
+                    Manifest.permission.POST_NOTIFICATIONS
+            };
+        }
     }
 }

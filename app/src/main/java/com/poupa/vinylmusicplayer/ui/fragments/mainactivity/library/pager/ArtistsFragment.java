@@ -28,7 +28,7 @@ public class ArtistsFragment extends AbsLibraryPagerRecyclerViewCustomGridSizeFr
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getLoaderManager().initLoader(LOADER_ID, null, this);
+        LoaderManager.getInstance(this).initLoader(LOADER_ID, null, this);
     }
 
     @NonNull
@@ -48,7 +48,7 @@ public class ArtistsFragment extends AbsLibraryPagerRecyclerViewCustomGridSizeFr
                 dataSet,
                 itemLayoutRes,
                 loadUsePalette(),
-                getLibraryFragment());
+                getLibraryFragment().getMainActivity());
     }
 
     @Override
@@ -68,7 +68,7 @@ public class ArtistsFragment extends AbsLibraryPagerRecyclerViewCustomGridSizeFr
 
     @Override
     protected int loadGridSize() {
-        return PreferenceUtil.getInstance().getArtistGridSize(getActivity());
+        return PreferenceUtil.getInstance().getArtistGridSize(requireActivity());
     }
 
     @Override
@@ -78,12 +78,27 @@ public class ArtistsFragment extends AbsLibraryPagerRecyclerViewCustomGridSizeFr
 
     @Override
     protected int loadGridSizeLand() {
-        return PreferenceUtil.getInstance().getArtistGridSizeLand(getActivity());
+        return PreferenceUtil.getInstance().getArtistGridSizeLand(requireActivity());
     }
 
     @Override
     protected void saveGridSizeLand(int gridSize) {
         PreferenceUtil.getInstance().setArtistGridSizeLand(gridSize);
+    }
+
+    @Override
+    protected void saveShowFooter(boolean showFooter) {
+        // Stub
+    }
+
+    @Override
+    public boolean loadShowFooter() {
+        return true;
+    }
+
+    @Override
+    protected void setShowFooter(boolean showFooter) {
+        getAdapter().showFooter(showFooter);
     }
 
     @Override
@@ -136,6 +151,8 @@ public class ArtistsFragment extends AbsLibraryPagerRecyclerViewCustomGridSizeFr
 
     @Override
     public void reload() {
-        getLoaderManager().restartLoader(LOADER_ID, null, this);
+        try {
+            LoaderManager.getInstance(this).restartLoader(LOADER_ID, null, this);
+        } catch (IllegalStateException ignored) {}
     }
 }

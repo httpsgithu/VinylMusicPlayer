@@ -46,8 +46,9 @@ public class AlbumsFragment extends AbsLibraryPagerRecyclerViewCustomGridSizeFra
                 getLibraryFragment().getMainActivity(),
                 dataSet,
                 itemLayoutRes,
+                loadShowFooter(),
                 loadUsePalette(),
-                getLibraryFragment());
+                getLibraryFragment().getMainActivity());
     }
 
     @Override
@@ -63,6 +64,16 @@ public class AlbumsFragment extends AbsLibraryPagerRecyclerViewCustomGridSizeFra
     @Override
     protected void saveSortOrder(String sortOrder) {
         PreferenceUtil.getInstance().setAlbumSortOrder(sortOrder);
+    }
+
+    @Override
+    public boolean loadShowFooter() {
+        return PreferenceUtil.getInstance().albumShowFooter();
+    }
+
+    @Override
+    protected void setShowFooter(boolean showFooter) {
+        getAdapter().setShowFooter(showFooter);
     }
 
     @Override
@@ -107,6 +118,11 @@ public class AlbumsFragment extends AbsLibraryPagerRecyclerViewCustomGridSizeFra
     }
 
     @Override
+    protected void saveShowFooter(boolean showFooter) {
+        PreferenceUtil.getInstance().setAlbumShowFooter(showFooter);
+    }
+
+    @Override
     @NonNull
     public Loader<ArrayList<Album>> onCreateLoader(int id, Bundle args) {
         return new AsyncAlbumLoader(getActivity());
@@ -135,6 +151,8 @@ public class AlbumsFragment extends AbsLibraryPagerRecyclerViewCustomGridSizeFra
 
     @Override
     public void reload() {
-        getLoaderManager().restartLoader(LOADER_ID, null, this);
+        try {
+            LoaderManager.getInstance(this).restartLoader(LOADER_ID, null, this);
+        } catch (IllegalStateException ignored) {}
     }
 }

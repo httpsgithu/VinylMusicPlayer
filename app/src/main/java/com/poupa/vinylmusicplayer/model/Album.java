@@ -5,67 +5,57 @@ import android.os.Parcelable;
 
 import androidx.annotation.NonNull;
 
-import com.poupa.vinylmusicplayer.discog.Discography;
 import com.poupa.vinylmusicplayer.util.MusicUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
 /**
  * @author Karim Abou Zeid (kabouzeid)
  */
 public class Album implements Parcelable {
-    public static final String UNKNOWN_ALBUM_DISPLAY_NAME = "Unknown Album";
+    public static String UNKNOWN_ALBUM_DISPLAY_NAME = "Unknown Album";
 
+    @NonNull
     public final ArrayList<Song> songs;
 
-    public Album(ArrayList<Song> songs) {
-        this.songs = songs;
+    public Album(@NonNull final ArrayList<Song> theSongs) {
+        songs = theSongs;
     }
 
     public Album() {
-        this.songs = new ArrayList<>();
+        songs = new ArrayList<>();
     }
 
     public long getId() {
         return safeGetFirstSong().albumId;
     }
 
+    @NonNull
     public String getTitle() {
-        String name = safeGetFirstSong().albumName;
-        if (MusicUtil.isAlbumNameUnknown(name)) {
-            return UNKNOWN_ALBUM_DISPLAY_NAME;
-        }
-        return name;
-    }
-
-    public long getArtistId() {
-        return getArtist().id;
-    }
-
-    public String getArtistName() {
-        return getArtist().name;
+        return getTitle(safeGetFirstSong().albumName);
     }
 
     @NonNull
-    private Artist getArtist() {
+    public static String getTitle(@NonNull final String albumName) {
+        if (MusicUtil.isAlbumNameUnknown(albumName)) {
+            return UNKNOWN_ALBUM_DISPLAY_NAME;
+        }
+        return albumName;
+    }
+
+    @NonNull
+    public List<String> getArtistNames() {
         final Song song = safeGetFirstSong();
 
-        // Try getting the album artist
-        final String name = song.albumArtistNames.get(0);
-        if (!MusicUtil.isArtistNameUnknown(name)) {
-            final Artist artist = Discography.getInstance().getArtistByName(name);
-            if (artist != null) return artist;
+        if (song.albumArtistNames.isEmpty()) {
+            return Collections.unmodifiableList(song.artistNames);
+        } else {
+            return Collections.unmodifiableList(song.albumArtistNames);
         }
-
-        // Fallback: use the first song's first artist
-        final Artist artist = Discography.getInstance().getArtist(song.artistId);
-        if (artist != null) return artist;
-
-        // Give up
-        return Artist.EMPTY;
     }
 
     public int getYear() {
@@ -73,11 +63,11 @@ public class Album implements Parcelable {
     }
 
     public long getDateAdded() {
-        if (songs.isEmpty()) {return Song.EMPTY_SONG.dateModified;}
+        if (songs.isEmpty()) {return Song.EMPTY_SONG.dateAdded;}
 
         return Collections.min(
                 songs,
-                Comparator.comparingLong(s -> s.dateAdded)
+                Comparator.comparingLong(song -> song.dateAdded)
         ).dateAdded;
     }
 
@@ -86,7 +76,7 @@ public class Album implements Parcelable {
 
         return Collections.max(
                 songs,
-                Comparator.comparingLong(s -> s.dateModified)
+                Comparator.comparingLong(song -> song.dateModified)
         ).dateModified;
     }
 
@@ -112,9 +102,10 @@ public class Album implements Parcelable {
 
     @Override
     public int hashCode() {
-        return songs != null ? songs.hashCode() : 0;
+        return songs.hashCode();
     }
 
+    @NonNull
     @Override
     public String toString() {
         return "Album{" +
@@ -132,11 +123,12 @@ public class Album implements Parcelable {
         dest.writeTypedList(songs);
     }
 
-    protected Album(Parcel in) {
-        this.songs = in.createTypedArrayList(Song.CREATOR);
+    protected Album(@NonNull final Parcel in) {
+        final ArrayList<Song> loadedSongs = in.createTypedArrayList(Song.CREATOR);
+        songs = (loadedSongs == null) ? new ArrayList<>() : loadedSongs;
     }
 
-    public static final Creator<Album> CREATOR = new Creator<Album>() {
+    public static final Creator<Album> CREATOR = new Creator<>() {
         public Album createFromParcel(Parcel source) {
             return new Album(source);
         }

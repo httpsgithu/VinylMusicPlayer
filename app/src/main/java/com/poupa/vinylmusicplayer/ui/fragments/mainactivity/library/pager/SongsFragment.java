@@ -18,6 +18,7 @@ import com.poupa.vinylmusicplayer.model.Song;
 import com.poupa.vinylmusicplayer.util.PreferenceUtil;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Karim Abou Zeid (kabouzeid)
@@ -44,7 +45,7 @@ public class SongsFragment extends AbsLibraryPagerRecyclerViewCustomGridSizeFrag
         int itemLayoutRes = getItemLayoutRes();
         notifyLayoutResChanged(itemLayoutRes);
         boolean usePalette = loadUsePalette();
-        ArrayList<Song> dataSet = getAdapter() == null ? new ArrayList<>() : getAdapter().getDataSet();
+        List<? extends Song> dataSet = getAdapter() == null ? new ArrayList<>() : getAdapter().getDataSet();
 
         if (getGridSize() <= getMaxGridSizeForList()) {
             return new ShuffleButtonSongAdapter(
@@ -52,14 +53,14 @@ public class SongsFragment extends AbsLibraryPagerRecyclerViewCustomGridSizeFrag
                     dataSet,
                     itemLayoutRes,
                     usePalette,
-                    getLibraryFragment());
+                    getLibraryFragment().getMainActivity());
         }
         return new SongAdapter(
                 getLibraryFragment().getMainActivity(),
                 dataSet,
                 itemLayoutRes,
                 usePalette,
-                getLibraryFragment());
+                getLibraryFragment().getMainActivity());
     }
 
     @Override
@@ -114,6 +115,21 @@ public class SongsFragment extends AbsLibraryPagerRecyclerViewCustomGridSizeFrag
     }
 
     @Override
+    public void saveShowFooter(boolean showFooter) {
+        // TODO
+    }
+
+    @Override
+    public boolean loadShowFooter() {
+        return true; // TODO
+    }
+
+    @Override
+    public void setShowFooter(boolean showFooter) {
+        // TODO
+    }
+
+    @Override
     public void saveUsePalette(boolean usePalette) {
         PreferenceUtil.getInstance().setSongColoredFooters(usePalette);
     }
@@ -163,6 +179,8 @@ public class SongsFragment extends AbsLibraryPagerRecyclerViewCustomGridSizeFrag
 
     @Override
     public void reload() {
-        getLoaderManager().restartLoader(LOADER_ID, null, this);
+        try {
+            LoaderManager.getInstance(this).restartLoader(LOADER_ID, null, this);
+        } catch (IllegalStateException ignored) {}
     }
 }

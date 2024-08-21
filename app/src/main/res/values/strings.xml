@@ -13,15 +13,28 @@
     <string name="action_add_to_favorites">Add to favorites</string>
     <string name="action_remove_from_favorites">Remove from favorites</string>
     <string name="save_playlists_title">Save as files</string>
+    <string name="action_import_from_playlist">Import from playlist</string>
     <string name="action_search">Search</string>
     <string name="action_play_next">Play next</string>
     <string name="action_play">Play</string>
     <string name="action_play_pause">Play/Pause</string>
     <string name="action_previous">Previous</string>
     <string name="action_next">Next</string>
+
+    <string name="pref_title_enqueue_song_default_choice">Default action on choosing/tapping a song while browsing</string>
+    <string name="action_always_ask_for_confirmation">Always ask for actions</string>
     <string name="action_add_to_playing_queue">Add to playing queue</string>
     <string name="action_remove_from_playing_queue">Remove from playing queue</string>
+    <string name="action_clear_playing_queue">Clear playing queue</string>
+    <string name="action_save_playing_queue">Save playing queue</string>
+    <string name="about_to_add_title_to_playing_queue">About to add 1 song into the playing queue.\nHow do you want to proceed with this song?</string>
+    <string name="about_to_add_x_titles_to_playing_queue">About to add %1$d songs into the playing queue.\nHow do you want to proceed with these songs?</string>
+    <string name="added_title_to_playing_queue">"Added 1 song to the playing queue."</string>
+    <string name="added_x_titles_to_playing_queue">Added %1$d songs to the playing queue.</string>
+    <string name="failed_restore_playing_queue">Cannot restore, previous queue is corrupted</string>
+
     <string name="action_add_to_playlist">Add to playlist…</string>
+    <string name="added_x_titles_to_playlist">Added %1$d songs to the playlist.</string>
     <string name="action_tag_editor">Tag editor</string>
     <string name="action_delete_from_device">Delete from device</string>
     <string name="action_details">Details</string>
@@ -43,7 +56,10 @@
     <string name="album">Album</string>
     <string name="artist">Artist</string>
     <string name="genre">Genre</string>
-    <string name="unknown_genre">Unknown genre</string>
+    <string name="unknown_artist">Unknown Artist</string>
+    <string name="unknown_album">Unknown Album</string>
+    <string name="unknown_genre">Unknown Genre</string>
+    <string name="untitled_song">Untitled</string>
     <string name="album_artist">Album artist</string>
     <string name="year">Year</string>
     <string name="track_number">"Track Number"</string>
@@ -51,6 +67,7 @@
     <string name="lyrics">Lyrics</string>
     <string name="album_artist_multiple">Album Artists (one per line)</string>
     <string name="artist_multiple">Artists (one per line)</string>
+    <string name="genre_multiple">Genres (one per line)</string>
     <string name="album_or_artist_empty">The title or artist is empty.</string>
     <string name="saving_changes">Saving changes</string>
     <string name="label_details">Details</string>
@@ -61,6 +78,7 @@
     <string name="label_bit_rate">Bitrate</string>
     <string name="label_sampling_rate">Sampling rate</string>
     <string name="label_replay_gain" translatable="false">ReplayGain</string>
+    <string name="label_replay_gain_peak">ReplayGain peak</string>
     <string name="label_date_added">Added</string>
     <string name="label_date_modified">Modified</string>
     <string name="action_go_to_artist">Go to artist</string>
@@ -68,8 +86,6 @@
     <string name="label_playing_queue">Playing queue</string>
     <string name="no_results">No results</string>
     <string name="updating">Updating…</string>
-    <string name="added_title_to_playing_queue">"Added 1 title to the playing queue."</string>
-    <string name="added_x_titles_to_playing_queue">Added %1$d titles to the playing queue.</string>
     <string name="action_remove_from_playlist">Remove from playlist</string>
     <string name="action_grid_size">Grid size</string>
     <string name="action_grid_size_land">Grid size (land)</string>
@@ -95,13 +111,12 @@
     <string name="clear_playlist_title">Clear playlist</string>
     <string name="save_playlist_title">Save as file</string>
     <string name="add_playlist_title">"Add to playlist"</string>
+    <string name="import_playlist_title">"Import from playlist"</string>
     <string name="select_all_title">Select all</string>
     <string name="action_shuffle_all">Shuffle all</string>
     <string name="action_shuffle_album">Shuffle album</string>
     <string name="action_shuffle_artist">Shuffle artist</string>
     <string name="action_shuffle_playlist">Shuffle playlist</string>
-    <string name="action_clear_playing_queue">Clear playing queue</string>
-    <string name="action_save_playing_queue">Save playing queue</string>
     <string name="action_go_to_start_directory">Go to start directory</string>
     <string name="action_show_lyrics">Show lyrics</string>
     <string name="light_theme_name">Light</string>
@@ -126,28 +141,32 @@
     <string name="pref_header_colors">Colors</string>
     <string name="pref_header_now_playing_screen">Now playing</string>
     <string name="pref_title_general_theme">General theme</string>
+    <string name="pref_header_album">Album</string>
     <string name="pref_header_audio">Audio</string>
+    <string name="pref_header_development">Development/Experimental features</string>
     <string name="pref_header_library">Library</string>
     <string name="pref_header_images">Images</string>
     <string name="pref_header_lockscreen">Lockscreen</string>
     <string name="pref_header_playlists">Playlists</string>
+    <string name="pref_header_migrating">Migrating</string>
     <string name="pref_header_notification">Notification</string>
     <string name="pref_title_navigation_bar">Colored navigation bar</string>
     <string name="pref_title_app_shortcuts">Colored app shortcuts</string>
     <string name="pref_title_widget_background_transparent">Transparent widget background</string>
-    <string name="pref_title_album_art_on_lockscreen">Show album cover</string>
     <string name="pref_title_auto_download_metadata">Auto download metadata</string>
-    <string name="pref_title_blurred_album_art">Blur album cover</string>
     <string name="pref_title_colored_notification">Colored notification</string>
     <string name="pref_title_classic_notification">Classic notification design</string>
-    <string name="pref_title_ignore_media_store_artwork">Ignore Media Store covers</string>
     <string name="pref_title_gapless_playback">Gapless playback</string>
     <string name="pref_title_audio_ducking">Reduce volume on focus loss</string>
     <string name="pref_title_recently_played_interval">Recently played playlist interval</string>
     <string name="pref_title_not_recently_played_interval">Not recently played playlist interval</string>
     <string name="pref_title_last_added_interval">Last added playlist interval</string>
+    <string name="pref_title_export">Export</string>
+    <string name="pref_summary_export">Export the settings as file</string>
+    <string name="pref_title_import">Import</string>
+    <string name="pref_summary_import">Import the settings from previously exported file</string>
     <string name="pref_summary_maintain_top_tracks_playlist">Maintain a playlist of top tracks</string>
-    <string name="pref_summary_maintain_skipped_songs_playlist">Maintain a playlist of song skipped during playback</string>
+    <string name="pref_summary_maintain_skipped_songs_playlist">Maintain a playlist of songs skipped during playback</string>
     <string name="pref_title_synchronized_lyrics_show">Show synchronized lyrics</string>
     <string name="pref_title_animate_playing_song_icon">Animate playing song icon</string>
     <string name="pref_title_remember_last_tab">Remember last tab</string>
@@ -174,13 +193,11 @@
     <string name="no_genres">No genres</string>
     <string name="empty">Empty</string>
     <string name="playlist_name_empty">Playlist name</string>
+    <string name="settings_filename">Filename (without .json)</string>
     <string name="song">Song</string>
-    <string name="pref_summary_album_art_on_lockscreen">Uses the current songs album cover as lockscreen wallpaper</string>
-    <string name="pref_summary_blurred_album_art">Blurs the album cover on the lockscreen. Can cause problems with third party apps and widgets.</string>
     <string name="pref_summary_classic_notification">Use the classic notification design</string>
     <string name="pref_summary_colored_notification">"Colors the notification in the album cover\u2019s vibrant color"</string>
     <string name="pref_summary_gapless_playback">"Can cause playback issues on some devices"</string>
-    <string name="pref_summary_ignore_media_store_artwork">Can increase the album cover quality but causes slower image loading times. Only enable this if you have problems with low resolution artworks.</string>
     <string name="pref_summary_colored_navigation_bar">Colors the navigation bar in the primary color</string>
     <string name="pref_summary_colored_app_shortcuts">Colors the app shortcuts in the primary color</string>
     <string name="pref_summary_widget_background_transparent">Makes the background of widgets transparent</string>
@@ -189,6 +206,9 @@
     <string name="pref_summary_animate_playing_song_icon">Animate the icon of the playing song in different song-related views</string>
     <string name="pref_summary_remember_last_tab">Go to the last opened tab on launch</string>
     <string name="pref_summary_remember_shuffle">Shuffle mode will stay on when selecting a new list of songs</string>
+    <string name="pref_title_oops_handler_enabled">Collect crash reports</string>
+    <string name="pref_summary_oops_handler_enabled">Help development by collecting and reporting crashes</string>
+    <string name="pref_title_queue_sync_with_media_store">Sync queue with media tag updates</string>
     <string name="could_not_download_album_cover">"Couldn\u2019t download a matching album cover."</string>
     <string name="search_hint">Search your library…</string>
     <string name="favorites">Favorites</string>
@@ -209,6 +229,11 @@
     <string name="time_unit_minutes">min</string>
     <string name="action_new_playlist">New playlist…</string>
     <string name="new_playlist_title">New playlist</string>
+    <string name="export_settings">Export settings</string>
+    <string name="cannot_export_settings">Cannot export settings</string>
+    <string name="cannot_import_settings">Cannot import settings</string>
+    <string name="unsupported_saved_pref_version">Unsupported saved pref version</string>
+    <string name="unsupported_saved_pref_format">Unsupported saved pref format</string>
     <string name="grid_size_1" translatable="false">1</string>
     <string name="grid_size_2" translatable="false">2</string>
     <string name="grid_size_3" translatable="false">3</string>
@@ -218,14 +243,21 @@
     <string name="grid_size_7" translatable="false">7</string>
     <string name="grid_size_8" translatable="false">8</string>
     <string name="colored_footers">Colored footers</string>
-    <string name="special_thanks_to">Special thanks to</string>
+    <string name="show_footer">Show footers</string>
     <string name="changelog">Changelog</string>
     <string name="licenses">Licenses</string>
     <string name="permissions_denied">Permissions denied.</string>
     <string name="permission_external_storage_denied">Permission to access external storage denied.</string>
     <string name="support_development">Support development</string>
     <string name="version">Version</string>
+
+    <string name="maintainers">Maintainers</string>
+    <string name="contributors">Contributors</string>
+    <string name="special_thanks_to">Special thanks to</string>
     <string name="author">Author</string>
+    <string name="label_other_contributors">+ many other contributors</string>
+    <string name="missing_webview_component">"This device doesn't support WebView, which is necessary to perform the requested action.\nIt is missing a system component."</string>
+
     <string name="write_an_email">Write an email</string>
     <string name="fork_on_github">Fork on GitHub</string>
     <string name="visit_website">Visit website</string>
@@ -238,6 +270,8 @@
     <string name="michael_cook_summary">For the pretty material app icon.</string>
     <string name="maarten_corpel_summary">For making the Play Store illustration and the empty album cover.</string>
     <string name="aleksandar_tesic_summary">For helping me with the design.</string>
+    <string name="eugene_cheung_summary">For his contributions to the source code.</string>
+    <string name="adrian_summary">For creating the album page design.</string>
     <string name="website">Website</string>
     <string name="up_next">Up next</string>
     <string name="pref_title_now_playing_screen_appearance">Appearance</string>
@@ -247,23 +281,33 @@
     <string name="rearrange_playing_queue_instruction">Rearrange the playing queue by dragging a song from its track number.</string>
     <string name="library">Library</string>
     <string name="folders">Folders</string>
+    <string name="sd_card">SD card</string>
     <string name="saved_playlist_to">Saved playlist to %s.</string>
     <string name="failed_to_save_playlist">Failed to save playlist (%s).</string>
     <string name="saved_x_playlists_to_x">Saved %1$d playlists to %2$s.</string>
     <string name="saved_x_playlists_to_x_failed_to_save_x">Saved %1$d playlists to %2$s, failed to save %3$d.</string>
+    <string name="imported_x_playlists">"Imported %d playlists"</string>
+    <string name="imported_x_skipped_x_playlists">"Imported %1$d playlists, skipped %2$d"</string>
     <string name="not_listed_in_media_store"><![CDATA[<b>%s</b> is not listed in the media store.]]></string>
     <string name="some_files_are_not_listed_in_the_media_store">Some files are not listed in the media store.</string>
     <string name="nothing_to_scan">Nothing to scan.</string>
     <string name="scanned_files">Scanned %1$d of %2$d files.</string>
     <string name="could_not_scan_files">Could not scan %d files.</string>
-    <string name="scanning_x_songs_in_progress">Updating %1$d songs…</string>
-    <string name="scanning_x_songs_finished">Updated %1$d songs</string>
+    <string name="scanning_x_songs_added">"%1$d tracks added"</string>
+    <string name="scanning_x_songs_updated">"%1$d tracks updated"</string>
+    <string name="scanning_x_songs_removed">"%1$d tracks removed"</string>
     <string name="listing_files">Listing files</string>
     <string name="new_start_directory">%s is the new start directory.</string>
     <string name="app_widget_big_name">Vinyl Music Player - Big</string>
     <string name="app_widget_classic_name">Vinyl Music Player - Classic</string>
     <string name="app_widget_small_name">Vinyl Music Player - Small</string>
     <string name="app_widget_card_name">Vinyl Music Player - Card</string>
+
+    <string name="app_crashed">Vinyl Music Player crashed</string>
+    <string name="report_a_crash_invitation">Sorry for the inconvenience.\n\nData related to the crash
+        has been collected and may help the developers to improve this situation.\nYou are invited to submit a
+        bug report - you can review the collected data and will decide on what data to submit.</string>
+    <string name="report_a_crash">Report a crash</string>
     <string name="report_an_issue">Report an issue</string>
     <string name="bug_report_issue">Issue</string>
     <string name="login">Login</string>
@@ -271,7 +315,7 @@
     <string name="description">Description</string>
     <string name="device_info">Device info</string>
     <string name="bug_report_use_account">Send using GitHub account</string>
-    <string name="bug_report_manual">Send manually</string>
+    <string name="bug_report_manual">Submit the report manually</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
     <string name="bug_report_no_title">Please enter an issue title</string>
@@ -286,7 +330,10 @@
     <string name="bug_report_failed_unknown">An unexpected error occurred. Please contact the app developer.</string>
     <string name="copied_device_info_to_clipboard">Copied device info to clipboard.</string>
     <string name="your_account_data_is_only_used_for_authentication">Your account data is only used for authentication.</string>
-    <string name="you_will_be_forwarded_to_the_issue_tracker_website">You will be forwarded to the issue tracker website.</string>
+    <string name="you_will_be_forwarded_to_the_issue_tracker_website">By clicking on the button here-under, you will be
+        forwarded to the issue tracker website.\n\nThe device info shown here will be copied to clipboard so
+        that you can paste it on the issue report.</string>
+
     <string name="deleting_songs">Deleting songs</string>
     <string name="app_shortcut_shuffle_all_short">Shuffle</string>
     <string name="app_shortcut_top_tracks_short">Top tracks</string>
@@ -296,8 +343,11 @@
     <string name="snack_bar_title_removed_song">Removed</string>
     <string name="playing_notification_description">The playing notification provides actions for play/pause etc.</string>
     <string name="playing_notification_name">Playing notification</string>
-    <string name="eugene_cheung_summary">For his contributions to the source code.</string>
-    <string name="adrian_summary">For creating the album page design.</string>
+
+    <string name="idle_notification_description">The idle notification is used where the playing queue is empty</string>
+    <string name="idle_notification_name">Idle notification</string>
+    <string name="idle_notification_title">Vinyl is running</string>
+
     <string name="add_action">Add</string>
     <string name="blacklist">Blacklist</string>
     <string name="remove_from_blacklist">Remove from blacklist</string>
@@ -321,11 +371,11 @@
     <string name="sort_order_date_added_reverse">Added - Recent first</string>
     <string name="sort_order_date_modified">Modified</string>
     <string name="sort_order_date_modified_reverse">Modified - Recent first</string>
+    <string name="sort_order_group_by_album">Group by album</string>
     <string name="finish_current_music_sleep_timer">Finish last song</string>
     <string name="dialog_ringtone_title">Set ringtone</string>
     <string name="dialog_ringtone_message">Please allow Vinyl Music Player to modify system settings in the next screen before setting the ringtone.</string>
     <string name="action_scan_directory">Scan directory</string>
-    <string name="scan_media">Scan media</string>
     <string name="reset_discography">Rescan library</string>
     <string name="reset_discography_warning">This will clear and rebuild the app internal song database.\n\nNo song will be deleted during this operation, but this might clear the play history.\n\nDuring a possible long duration, until the rescan is complete, you will not be able to use the app normally</string>
     <string name="none">None</string>
@@ -347,6 +397,7 @@
     <!-- SAF -->
     <string name="saf_error_uri">Can\'t get SAF URI</string>
     <string name="saf_write_failed">File write failed: %s</string>
+    <string name="saf_read_failed">File read failed: %s</string>
     <string name="saf_delete_failed">File delete failed: %s</string>
     <string name="saf_pick_file">File access required. Pick %s</string>
     <!-- SAF guide -->
@@ -355,8 +406,12 @@
     <string name="saf_guide_slide1_description">Open navigation drawer</string>
     <string name="saf_guide_slide2_title">Select your SD card in navigation drawer</string>
     <string name="saf_guide_slide2_description">You need to select your SD card root directory</string>
+    <string name="saf_guide_slide2_description_android_r">You need to select your SD card directory that contains your music (cannot be the root directory)</string>
     <string name="saf_guide_slide3_title">Tap \'select\' button at the bottom of the screen</string>
     <string name="saf_guide_slide3_description">Do not open any subfolders</string>
+    <string name="access_not_granted">Access not granted - not saved</string>
+    <string name="android13_storage_perm_error">Your app has not been granted the READ_MEDIA_AUDIO permission.</string>
+    <string name="android13_no_file_browser_error">Your system doesn\'t appear to have a file browser to handle OPEN_DOCUMENT_TREE.</string>
     <!-- Android Auto -->
     <string name="playlists_label">Playlists</string>
     <string name="history_label">History</string>
@@ -372,4 +427,6 @@
     <string name="whitelist">Whitelist</string>
     <string name="pref_summary_whitelist">Only show content below start folder: </string>
 
+    <string name="write_permission">Always ask for write permission</string>
+    <string name="pref_summary_write_permission">To revoke already granted permission, go to android settings for this app, then &quot;Storage &amp; cache&quot; and revoke external storage</string>
 </resources>

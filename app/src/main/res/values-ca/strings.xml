@@ -21,6 +21,9 @@
     <string name="action_next">Següent</string>
     <string name="action_add_to_playing_queue">Afegeix a la cua</string>
     <string name="action_remove_from_playing_queue">Suprimeix de la cua</string>
+    <string name="about_to_add_title_to_playing_queue">Esteu a punt d\'afegir una cançó a la cua de reproducció. Com voleu procedir?</string>
+    <string name="about_to_add_x_titles_to_playing_queue">Esteu a punt d\'afegir %1$d cançons a la cua de reproducció. Com voleu procedir?</string>
+    <string name="failed_restore_playing_queue">No es pot restaurar la cua de reproducció anterior perquè està malmesa</string>
     <string name="action_add_to_playlist">Afegeix a una llista…</string>
     <string name="action_tag_editor">Editor d\'etiquetes</string>
     <string name="action_delete_from_device">Suprimeix del dispositiu</string>
@@ -56,6 +59,8 @@
     <string name="label_track_length">Durada</string>
     <string name="label_bit_rate">Taxa de bits</string>
     <string name="label_sampling_rate">Freqüència de mostratge</string>
+    <string name="label_date_added">Afegit</string>
+    <string name="label_date_modified">Modificat</string>
     <string name="action_go_to_artist">Ves a l\'artista</string>
     <string name="action_go_to_album">Ves a l\'àlbum</string>
     <string name="label_playing_queue">Cua de reproducció</string>
@@ -113,6 +118,7 @@
     <string name="pref_header_colors">Colors</string>
     <string name="pref_header_now_playing_screen">Reproducció actual</string>
     <string name="pref_title_general_theme">Tema general</string>
+    <string name="pref_header_album">Àlbum</string>
     <string name="pref_header_audio">Àudio</string>
     <string name="pref_header_library">Col·lecció</string>
     <string name="pref_header_images">Imatges</string>
@@ -122,12 +128,12 @@
     <string name="pref_title_navigation_bar">Barra de navegació acolorida</string>
     <string name="pref_title_app_shortcuts">Dreceres d\'aplicació acolorides</string>
     <string name="pref_title_widget_background_transparent">Fons de widget transparent</string>
-    <string name="pref_title_album_art_on_lockscreen">Mostra la portada de l\'àlbum</string>
+<!--    <string name="pref_title_album_art_on_lockscreen">Mostra la portada de l\'àlbum</string>-->
     <string name="pref_title_auto_download_metadata">Baixa les metadades automàticament</string>
-    <string name="pref_title_blurred_album_art">Difumina la portada de l\'àlbum</string>
+<!--    <string name="pref_title_blurred_album_art">Difumina la portada de l\'àlbum</string>-->
     <string name="pref_title_colored_notification">Notificacions acolorides</string>
     <string name="pref_title_classic_notification">Disseny de notificació clàssic</string>
-    <string name="pref_title_ignore_media_store_artwork">Ignora les portades del magatzem de mitjans</string>
+    <!--string name="pref_title_ignore_media_store_artwork">Ignora les portades del magatzem de mitjans</string-->
     <string name="pref_title_gapless_playback">Reproducció sense pauses</string>
     <string name="pref_title_audio_ducking">Baixa el volum en perdre el focus</string>
     <string name="pref_title_recently_played_interval">Reproduîdes recentment</string>
@@ -160,12 +166,12 @@
     <string name="empty">Buida</string>
     <string name="playlist_name_empty">Nom de la llista</string>
     <string name="song">Cançó</string>
-    <string name="pref_summary_album_art_on_lockscreen">Mostra la portada de l\'àlbum de la cançó actual com a fons de la pantalla de bloqueig</string>
-    <string name="pref_summary_blurred_album_art">Difumina la portada de l\'àlbum a la pantalla de bloqueig. Pot causar problemes amb aplicacions o widgets de tercers.</string>
+<!--    <string name="pref_summary_album_art_on_lockscreen">Mostra la portada de l\'àlbum de la cançó actual com a fons de la pantalla de bloqueig</string>-->
+<!--    <string name="pref_summary_blurred_album_art">Difumina la portada de l\'àlbum a la pantalla de bloqueig. Pot causar problemes amb aplicacions o widgets de tercers.</string>-->
     <string name="pref_summary_classic_notification">Utilitza el disseny de notificació clàssic</string>
     <string name="pref_summary_colored_notification">Acoloreix la notificació amb el color vibrant de la portada de l\'àlbum</string>
     <string name="pref_summary_gapless_playback">Pot causar problemes de reproducció en alguns dispositius</string>
-    <string name="pref_summary_ignore_media_store_artwork">Pot millorar la qualitat de les portades dels àlbums però incrementa el temps de càrrega de les imatges. Activeu-ho només si teniu problemes amb portades de baixa resolució.</string>
+    <!--string name="pref_summary_ignore_media_store_artwork">Pot millorar la qualitat de les portades dels àlbums però incrementa el temps de càrrega de les imatges. Activeu-ho només si teniu problemes amb portades de baixa resolució.</string-->
     <string name="pref_summary_colored_navigation_bar">Acoloreix la barra de navegació amb el color primari</string>
     <string name="pref_summary_colored_app_shortcuts">Acoloreix les dreceres de l\'aplicació amb el color d\'accentuació</string>
     <string name="pref_summary_widget_background_transparent">Fa transparent el fons dels widgets</string>
@@ -194,7 +200,10 @@
     <string name="action_new_playlist">Nova llista…</string>
     <string name="new_playlist_title">Nova llista de reproducció</string>
     <string name="colored_footers">Llegendes acolorides</string>
+    <string name="maintainers">Mantenidors</string>
+    <string name="contributors">Contribuïdors</string>
     <string name="special_thanks_to">Agraïments especials a</string>
+    <string name="show_footer">mostra el peu de pàgina</string>
     <string name="changelog">Registre de canvis</string>
     <string name="licenses">Llicències</string>
     <string name="permissions_denied">Permisos denegats</string>
@@ -202,6 +211,8 @@
     <string name="support_development">Dona suport al desenvolupament</string>
     <string name="version">Versió</string>
     <string name="author">Autor</string>
+    <string name="label_other_contributors">i molts altres contribuïdors</string>
+    <string name="missing_webview_component">Aquest dispositiu no és compatible amb WebView, que és necessari per dur a terme l\'acció sol·licitada. Falta un component del sistema.</string>
     <string name="write_an_email">Escriu un correu</string>
     <string name="fork_on_github">Bifurca a GitHub</string>
     <string name="visit_website">Visita el lloc web</string>
@@ -238,14 +249,17 @@
     <string name="app_widget_classic_name">Vinyl - Clàssic</string>
     <string name="app_widget_small_name">Vinyl - Petit</string>
     <string name="app_widget_card_name">Vinyl - Targeta</string>
+    <string name="app_crashed">El reproductor de música Vinyl ha fallat</string>
+    <string name="report_a_crash_invitation">Disculpeu les molèsties. S\'han recopilat dades tècniques relacionades amb la fallada que poden ajudar els desenvolupadors a millorar aquesta situació. Esteu convidats a enviar un informe d\'error, podeu revisar les dades recollides i decidir quines dades enviareu a les pantalles següents.</string>
+    <string name="report_a_crash">Envia un informe</string>
     <string name="report_an_issue">Informa d\'un problema</string>
     <string name="bug_report_issue">Incidència</string>
     <string name="login">Autenticació</string>
     <string name="title">Títol</string>
     <string name="description">Descripció</string>
     <string name="device_info">Informació del dispositiu</string>
-    <string name="bug_report_use_account">Envia-ho mitjançant un compte de GitHub</string>
-    <string name="bug_report_manual">Envia-ho manualment</string>
+    <string name="bug_report_use_account">Envia un informe d\'error mitjançant un compte de GitHub</string>
+    <string name="bug_report_manual">Envia un informe d\'error manualment</string>
     <string name="username">Nom d\'usuari</string>
     <string name="password">Contrasenya</string>
     <string name="bug_report_no_title">Introduïu el títol de la incidència</string>
@@ -260,7 +274,7 @@
     <string name="bug_report_failed_unknown">S\'ha produït un error inesperat. Contacteu amb el desenvolupador de l\'aplicació.</string>
     <string name="copied_device_info_to_clipboard">S\'ha copiat la informació del dispositiu al porta-retalls.</string>
     <string name="your_account_data_is_only_used_for_authentication">Les dades del vostre compte només es fan servir per a l\'autenticació.</string>
-    <string name="you_will_be_forwarded_to_the_issue_tracker_website">Sereu redirigits al lloc web de l\'eina de seguiment d\'incidències.</string>
+    <string name="you_will_be_forwarded_to_the_issue_tracker_website">En fer clic al botó que hi ha a continuació, sereu redirigits al lloc web del gestor d\'incidències.\n\nLa informació del dispositiu que es mostra aquí es copiarà al porta-retalls perquè pugueu enganxar-la a l\'informe d\'error.</string>
     <string name="deleting_songs">S\'estan suprimint les cançons</string>
     <string name="app_shortcut_shuffle_all_short">Aleatòries</string>
     <string name="app_shortcut_top_tracks_short">Més reproduïdes</string>
@@ -272,6 +286,9 @@
     <string name="playing_notification_name">Notificació de reproducció</string>
     <string name="eugene_cheung_summary">Per les seves contribucions al codi font.</string>
     <string name="adrian_summary">Per crear el disseny de la pàgina d\'àlbum.</string>
+    <string name="idle_notification_description">La notificació d\'inactivitat es fa servir quan la cua de reproducció està buida</string>
+    <string name="idle_notification_name">Notificació d\'inactivitat</string>
+    <string name="idle_notification_title">El Vinyl s\'està executant</string>
     <string name="add_action">Afegeix</string>
     <string name="blacklist">Llista negra</string>
     <string name="remove_from_blacklist">Suprimeix de la llista negra</string>
@@ -295,7 +312,7 @@
     <string name="dialog_ringtone_title">Estableix el to de trucada</string>
     <string name="dialog_ringtone_message">Permet al Vinyl modificar els paràmetres del sistema en la pantalla següent per establir el to de trucada.</string>
     <string name="action_scan_directory">Escaneja el directori</string>
-    <string name="scan_media">Escaneja els mitjans</string>
+    <string name="reset_discography_warning">Això esborrarà i reconstruirà la base de dades de cançons interna de l\'aplicació.\n\nNo se suprimirà cap cançó durant aquesta operació, però és possible que s\'esborri l\'historial de reproducció.\n\nDurant una bona estona, fins que no s\'hagi completat l\'escaneig, no podreu utilitzar l\'aplicació amb normalitat.</string>
     <string name="none">Cap</string>
     <string name="track">Pista</string>
     <string name="label_with_rg_info">Amb etiquetes ReplayGain:</string>
@@ -317,7 +334,7 @@
     <string name="saf_guide_slide2_title">Seleccioneu la targeta SD al tauler de navegació</string>
     <string name="saf_guide_slide2_description">Heu de seleccionar el directori arrel de la targeta SD</string>
     <string name="saf_guide_slide3_title">Toqueu el botó \"Selecciona\" a la part inferior de la pantalla</string>
-    <string name="saf_guide_slide3_description">No obriu cap subdirectori</string>
+    <string name="saf_guide_slide3_description">No obriu cap subcarpeta</string>
     <!-- Android Auto -->
     <string name="playlists_label">Llistes de reproducció</string>
     <string name="history_label">Historial de reproducció</string>
@@ -342,8 +359,6 @@
     <string name="yes">Sí</string>
     <string name="whitelist">Llista blanca</string>
     <string name="time_unit_minutes">min</string>
-    <string name="scanning_x_songs_in_progress">Actualizant %1$d cançons…</string>
-    <string name="scanning_x_songs_finished">%1$d cançons actualitzades</string>
     <string name="rounded_theme_style_name">Arrodonit</string>
     <string name="pref_title_theme_style">Estil del tema</string>
     <string name="pref_title_show_song_number">Mostra el número de pista</string>
@@ -359,4 +374,11 @@
     <string name="sort_order_date_modified">Modificació</string>
     <string name="sort_order_date_modified_reverse">Modificació - Recents primer</string>
     <string name="sort_order_date_added">Addició</string>
+    <string name="pref_title_enqueue_song_default_choice">Acció predeterminada en triar una cançó</string>
+    <string name="action_always_ask_for_confirmation">Demana l\'acció cada vegada</string>
+    <string name="imported_x_playlists">S\'han importat %d llistes de reproducció</string>
+    <string name="imported_x_skipped_x_playlists">S\'han importat %1$d llistes de reproducció, se n\'han omès %2$d</string>
+    <string name="saf_guide_slide2_description_android_r">Heu de seleccionar el directori de la targeta SD que conté la música (no pot ser el directori arrel)</string>
+    <string name="access_not_granted">No s\'ha permès l\'accés, no s\'ha desat</string>
+    <string name="android13_storage_perm_error">No s\'ha concedit el permís de lectura de fitxers d\'àudio a l\'aplicació.</string>
 </resources>

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.loader.app.LoaderManager;
@@ -13,13 +14,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.poupa.vinylmusicplayer.R;
 import com.poupa.vinylmusicplayer.adapter.PlaylistAdapter;
 import com.poupa.vinylmusicplayer.interfaces.LoaderIds;
-import com.poupa.vinylmusicplayer.loader.PlaylistLoader;
 import com.poupa.vinylmusicplayer.misc.WrappedAsyncTaskLoader;
 import com.poupa.vinylmusicplayer.model.Playlist;
 import com.poupa.vinylmusicplayer.model.smartplaylist.HistoryPlaylist;
 import com.poupa.vinylmusicplayer.model.smartplaylist.LastAddedPlaylist;
 import com.poupa.vinylmusicplayer.model.smartplaylist.MyTopTracksPlaylist;
 import com.poupa.vinylmusicplayer.model.smartplaylist.NotRecentlyPlayedPlaylist;
+import com.poupa.vinylmusicplayer.provider.StaticPlaylist;
 import com.poupa.vinylmusicplayer.util.PreferenceUtil;
 
 import java.util.ArrayList;
@@ -59,7 +60,7 @@ public class PlaylistsFragment
     @Override
     protected PlaylistAdapter createAdapter() {
         ArrayList<Playlist> dataSet = getAdapter() == null ? new ArrayList<>() : getAdapter().getDataSet();
-        return new PlaylistAdapter(getLibraryFragment().getMainActivity(), dataSet, getLibraryFragment());
+        return new PlaylistAdapter(getLibraryFragment().getMainActivity(), dataSet, getLibraryFragment().getMainActivity());
     }
 
     @Override
@@ -105,8 +106,9 @@ public class PlaylistsFragment
                 playlists.add(new MyTopTracksPlaylist(context));
             }
 
-            playlists.addAll(PlaylistLoader.getAllPlaylists(context));
-
+            for (StaticPlaylist playlist : StaticPlaylist.getAllPlaylists()) {
+                playlists.add(playlist.asPlaylist());
+            }
             return playlists;
         }
 
@@ -123,24 +125,25 @@ public class PlaylistsFragment
     }
 
     public void reload() {
-        LoaderManager.getInstance(this).restartLoader(LOADER_ID, null, this);
+        try {
+            LoaderManager.getInstance(this).restartLoader(LOADER_ID, null, this);
+        } catch (IllegalStateException ignored) {}
     }
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        switch (key) {
-            case PreferenceUtil.LAST_ADDED_CUTOFF_V2:
-            case PreferenceUtil.RECENTLY_PLAYED_CUTOFF_V2:
-            case PreferenceUtil.NOT_RECENTLY_PLAYED_CUTOFF_V2:
-            case PreferenceUtil.MAINTAIN_TOP_TRACKS_PLAYLIST:
-                // This event can be called when the fragment is is detached mode
-                // In such situation, cannot call the reload (i.e. crash)
-                //     E AndroidRuntime: java.lang.IllegalStateException: Can't access ViewModels from detached fragment
-                //     E AndroidRuntime:        at androidx.fragment.app.Fragment.getViewModelStore(Unknown Source:32)
-                //     E AndroidRuntime:        at androidx.loader.app.LoaderManager.getInstance(Unknown Source:5)
-                // -> circumvent by delaying the reload
-                new Handler().postDelayed(this::reload, 100);
-                break;
+        if (TextUtils.equals(key, PreferenceUtil.LAST_ADDED_CUTOFF_V2)
+                || TextUtils.equals(key, PreferenceUtil.RECENTLY_PLAYED_CUTOFF_V2)
+                || TextUtils.equals(key, PreferenceUtil.NOT_RECENTLY_PLAYED_CUTOFF_V2)
+                || TextUtils.equals(key, PreferenceUtil.MAINTAIN_TOP_TRACKS_PLAYLIST)
+        ) {
+            // This event can be called when the fragment is is detached mode
+            // In such situation, cannot call the reload (i.e. crash)
+            //     E AndroidRuntime: java.lang.IllegalStateException: Can't access ViewModels from detached fragment
+            //     E AndroidRuntime:        at androidx.fragment.app.Fragment.getViewModelStore(Unknown Source:32)
+            //     E AndroidRuntime:        at androidx.loader.app.LoaderManager.getInstance(Unknown Source:5)
+            // -> circumvent by delaying the reload
+            new Handler().postDelayed(this::reload, 100);
         }
     }
 }

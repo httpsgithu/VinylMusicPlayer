@@ -5,17 +5,22 @@ import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.audiofx.AudioEffect;
+import android.media.audiofx.DynamicsProcessing;
 import android.net.Uri;
+import android.os.Build;
 import android.os.PowerManager;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
+import com.poupa.vinylmusicplayer.App;
 import com.poupa.vinylmusicplayer.R;
 import com.poupa.vinylmusicplayer.service.playback.Playback;
+import com.poupa.vinylmusicplayer.util.OopsHandler;
 import com.poupa.vinylmusicplayer.util.PreferenceUtil;
+import com.poupa.vinylmusicplayer.util.SafeToast;
 
 /**
  * @author Andrew Neal, Karim Abou Zeid (kabouzeid)
@@ -25,6 +30,9 @@ public class MultiPlayer implements Playback, MediaPlayer.OnErrorListener, Media
 
     private MediaPlayer mCurrentMediaPlayer = new MediaPlayer();
     private MediaPlayer mNextMediaPlayer;
+
+    @Nullable
+    private DynamicsProcessing mDynamicsProcessing;
 
     private final Context context;
     @Nullable
@@ -78,7 +86,11 @@ public class MultiPlayer implements Playback, MediaPlayer.OnErrorListener, Media
             } else {
                 player.setDataSource(path);
             }
-            player.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                player.setAudioAttributes(MusicService.PLAYBACK_ATTRIBUTE);
+            } else {
+                player.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            }
             player.prepare();
         } catch (Exception e) {
             return false;
@@ -191,6 +203,10 @@ public class MultiPlayer implements Playback, MediaPlayer.OnErrorListener, Media
         if (mNextMediaPlayer != null) {
             mNextMediaPlayer.release();
         }
+        if (mDynamicsProcessing != null) {
+            mDynamicsProcessing.release();
+            mDynamicsProcessing = null;
+        }
     }
 
     /**
@@ -266,8 +282,8 @@ public class MultiPlayer implements Playback, MediaPlayer.OnErrorListener, Media
     private void setVolume(final float vol) {
         try {
             mCurrentMediaPlayer.setVolume(vol, vol);
-        } catch (IllegalStateException e) {
-            e.printStackTrace();
+        } catch (final IllegalStateException e) {
+            OopsHandler.collectStackTrace(e);
         }
     }
 
@@ -297,20 +313,69 @@ public class MultiPlayer implements Playback, MediaPlayer.OnErrorListener, Media
         return mCurrentMediaPlayer.getAudioSessionId();
     }
 
+    /**
+     * Set the replay gain to be applied immediately. It should match the tags of the current song.
+     *
+     * @param replaygain gain in dB, or NaN for no replay gain (equivalent to 0dB)
+     */
+    @Override
     public void setReplayGain(float replaygain) {
         this.replaygain = replaygain;
         updateVolume();
     }
 
+    /**
+     * Set the ducking factor to be applied immediately.
+     *
+     * @param duckingFactor gain as a linear factor, between 0.0 and 1.0.
+     */
+    @Override
     public void setDuckingFactor(float duckingFactor) {
         this.duckingFactor = duckingFactor;
         updateVolume();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.P)
+    private void applyReplayGainOnDynamicsProcessing() {
+        if (Float.isNaN(replaygain)) {
+            if (mDynamicsProcessing != null) {
+                mDynamicsProcessing.release();
+                mDynamicsProcessing = null;
+            }
+        } else {
+            if (mDynamicsProcessing == null) {
+                mDynamicsProcessing = new DynamicsProcessing(mCurrentMediaPlayer.getAudioSessionId());
+                mDynamicsProcessing.setEnabled(true);
+            }
+
+            // setInputGainAllChannelsTo uses a dB scale
+            mDynamicsProcessing.setInputGainAllChannelsTo(replaygain);
+        }
+    }
+
     private void updateVolume() {
         float volume = 1.0f;
+
         if (!Float.isNaN(replaygain)) {
-            volume = replaygain;
+            // setVolume uses a linear scale
+            float rgResult = ((float) Math.pow(10.0, (replaygain / 20.0)));
+            volume = Math.max(0.0F, Math.min(1.0F, rgResult));
+        }
+
+        if (App.DYNAMICS_PROCESSING_AVAILABLE) {
+            try {
+                applyReplayGainOnDynamicsProcessing();
+
+                // DynamicsProcessing is in charge of replay gain, revert volume to 100%
+                volume = 1.0f;
+            } catch (final RuntimeException error) {
+                // This can happen with:
+                // - UnsupportedOperationException: an external equalizer is in use
+                // - RuntimeException: AudioEffect: set/get parameter error
+                // Fallback to volume modification in this case
+                OopsHandler.collectStackTrace(error);
+                //SafeToast.show(App.getStaticContext(), "Could not apply replay gain using DynamicsProcessing");
+            }
         }
 
         volume *= duckingFactor;
@@ -318,14 +383,11 @@ public class MultiPlayer implements Playback, MediaPlayer.OnErrorListener, Media
         setVolume(volume);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean onError(final MediaPlayer mp, final int what, final int extra) {
         if (mp == mCurrentMediaPlayer) {
             if (context != null) {
-                Toast.makeText(context, context.getResources().getString(R.string.unplayable_file), Toast.LENGTH_SHORT).show();
+                SafeToast.show(context, context.getResources().getString(R.string.unplayable_file));
             }
             mIsInitialized = false;
             mCurrentMediaPlayer.release();
@@ -346,15 +408,12 @@ public class MultiPlayer implements Playback, MediaPlayer.OnErrorListener, Media
             mCurrentMediaPlayer = new MediaPlayer();
             mCurrentMediaPlayer.setWakeMode(context, PowerManager.PARTIAL_WAKE_LOCK);
             if (context != null) {
-                Toast.makeText(context, context.getResources().getString(R.string.unplayable_file), Toast.LENGTH_SHORT).show();
+                SafeToast.show(context, context.getResources().getString(R.string.unplayable_file));
             }
         }
         return false;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void onCompletion(final MediaPlayer mp) {
         if (mp == mCurrentMediaPlayer && mNextMediaPlayer != null) {

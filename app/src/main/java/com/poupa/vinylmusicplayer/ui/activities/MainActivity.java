@@ -15,6 +15,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -30,16 +31,16 @@ import com.poupa.vinylmusicplayer.databinding.ActivityMainContentBinding;
 import com.poupa.vinylmusicplayer.databinding.ActivityMainDrawerLayoutBinding;
 import com.poupa.vinylmusicplayer.databinding.SlidingMusicPanelLayoutBinding;
 import com.poupa.vinylmusicplayer.dialogs.ChangelogDialog;
-import com.poupa.vinylmusicplayer.dialogs.ScanMediaFolderChooserDialog;
 import com.poupa.vinylmusicplayer.discog.Discography;
 import com.poupa.vinylmusicplayer.glide.GlideApp;
 import com.poupa.vinylmusicplayer.glide.VinylGlideExtension;
 import com.poupa.vinylmusicplayer.helper.MusicPlayerRemote;
 import com.poupa.vinylmusicplayer.helper.SearchQueryHelper;
+import com.poupa.vinylmusicplayer.interfaces.PaletteColorHolder;
 import com.poupa.vinylmusicplayer.loader.AlbumLoader;
 import com.poupa.vinylmusicplayer.loader.ArtistLoader;
-import com.poupa.vinylmusicplayer.loader.PlaylistSongLoader;
 import com.poupa.vinylmusicplayer.model.Song;
+import com.poupa.vinylmusicplayer.provider.StaticPlaylist;
 import com.poupa.vinylmusicplayer.service.MusicService;
 import com.poupa.vinylmusicplayer.ui.activities.base.AbsSlidingMusicPanelActivity;
 import com.poupa.vinylmusicplayer.ui.activities.intro.AppIntroActivity;
@@ -49,15 +50,16 @@ import com.poupa.vinylmusicplayer.util.MusicUtil;
 import com.poupa.vinylmusicplayer.util.PreferenceUtil;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
-import java.util.ArrayList;
+import java.io.File;
+import java.util.List;
 
-public class MainActivity extends AbsSlidingMusicPanelActivity {
-
+public class MainActivity extends AbsSlidingMusicPanelActivity implements PaletteColorHolder {
     public static final String TAG = MainActivity.class.getSimpleName();
     public static final int APP_INTRO_REQUEST = 100;
 
     private static final int LIBRARY = 0;
     private static final int FOLDERS = 1;
+    private static final int SD_FOLDERS = 2;
 
     NavigationView navigationView;
     DrawerLayout drawerLayout;
@@ -69,7 +71,6 @@ public class MainActivity extends AbsSlidingMusicPanelActivity {
     private View navigationDrawerHeader;
 
     private boolean blockRequestPermissions;
-    private boolean scanning;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,19 +92,6 @@ public class MainActivity extends AbsSlidingMusicPanelActivity {
         if (!checkShowIntro()) {
             showChangelog();
         }
-
-        final Discography discog = Discography.getInstance();
-        discog.startService(this);
-        addMusicServiceEventListener(discog);
-    }
-
-    @Override
-    protected void onDestroy() {
-        final Discography discog = Discography.getInstance();
-        removeMusicServiceEventListener(discog);
-        discog.stopService();
-
-        super.onDestroy();
     }
 
     private void setMusicChooser(int key) {
@@ -113,9 +101,18 @@ public class MainActivity extends AbsSlidingMusicPanelActivity {
                 navigationView.setCheckedItem(R.id.nav_library);
                 setCurrentFragment(LibraryFragment.newInstance());
                 break;
+            case SD_FOLDERS:
+                final File cardPath = FoldersFragment.getSDCardDirectory(this);
+                if (cardPath != null) {
+                    navigationView.setCheckedItem(R.id.nav_sd_folders);
+                    setCurrentFragment(FoldersFragment.newInstance(cardPath));
+                    break;
+                }
+                // else fall-though to the case FOLDERS
+                // unlikely to have this case, since the SD_FOLDERS choice is only available if the cardPath exists
             case FOLDERS:
                 navigationView.setCheckedItem(R.id.nav_folders);
-                setCurrentFragment(FoldersFragment.newInstance(this));
+                setCurrentFragment(FoldersFragment.newInstance());
                 break;
         }
     }
@@ -167,6 +164,9 @@ public class MainActivity extends AbsSlidingMusicPanelActivity {
         int accentColor = ThemeStore.accentColor(this);
         NavigationViewUtil.setItemIconColors(navigationView, ATHUtil.resolveColor(this, R.attr.iconColor, ThemeStore.textColorSecondary(this)), accentColor);
         NavigationViewUtil.setItemTextColors(navigationView, ThemeStore.textColorPrimary(this), accentColor);
+        if(FoldersFragment.getSDCardDirectory(this) != null){
+            navigationView.getMenu().findItem(R.id.nav_sd_folders).setVisible(true);
+        }
 
         navigationView.setNavigationItemSelectedListener(menuItem -> {
             drawerLayout.closeDrawers();
@@ -175,11 +175,8 @@ public class MainActivity extends AbsSlidingMusicPanelActivity {
                 new Handler().postDelayed(() -> setMusicChooser(LIBRARY), 200);
             } else if (itemId == R.id.nav_folders) {
                 new Handler().postDelayed(() -> setMusicChooser(FOLDERS), 200);
-            } else if (itemId == R.id.action_scan) {
-                new Handler().postDelayed(() -> {
-                    ScanMediaFolderChooserDialog dialog = ScanMediaFolderChooserDialog.create();
-                    dialog.show(getSupportFragmentManager(), "SCAN_MEDIA_FOLDER_CHOOSER");
-                }, 200);
+            } else if (itemId == R.id.nav_sd_folders) {
+                new Handler().postDelayed(() -> setMusicChooser(SD_FOLDERS), 200);
             } else if (itemId == R.id.action_reset_discography) {
                 new MaterialDialog.Builder(this)
                         .title(R.string.reset_discography)
@@ -214,7 +211,7 @@ public class MainActivity extends AbsSlidingMusicPanelActivity {
                     }
                 });
             }
-            ((TextView) navigationDrawerHeader.findViewById(R.id.title)).setText(song.title);
+            ((TextView) navigationDrawerHeader.findViewById(R.id.title)).setText(song.getTitle());
             ((TextView) navigationDrawerHeader.findViewById(R.id.text)).setText(MusicUtil.getSongInfoString(song));
             GlideApp.with(this)
                     .asDrawable()
@@ -276,8 +273,8 @@ public class MainActivity extends AbsSlidingMusicPanelActivity {
 
         if (intent.getAction() != null && intent.getAction().equals(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH)) {
             final String focus = intent.getStringExtra(MediaStore.EXTRA_MEDIA_FOCUS);
-            final ArrayList<Song> songs =
-                    SearchQueryHelper.getSongs(getApplicationContext(), focus, intent.getExtras());
+            final List<? extends Song> songs =
+                    SearchQueryHelper.getSongs(focus, intent.getExtras());
             // Guards against no songs found. Will cause a crash otherwise
             if (songs.size() > 0) {
                 if (MusicPlayerRemote.getShuffleMode() == MusicService.SHUFFLE_MODE_SHUFFLE) {
@@ -296,8 +293,10 @@ public class MainActivity extends AbsSlidingMusicPanelActivity {
             final long id = parseIdFromIntent(intent, "playlistId", "playlist");
             if (id >= 0) {
                 int position = intent.getIntExtra("position", 0);
-                ArrayList<Song> songs = PlaylistSongLoader.getPlaylistSongList(this, id);
-                MusicPlayerRemote.openQueue(songs, position, true);
+                final StaticPlaylist playlist = StaticPlaylist.getPlaylist(id);
+                if (playlist != null) {
+                    MusicPlayerRemote.openQueue(playlist.asSongs(), position, true);
+                }
                 handled = true;
             }
         } else if (MediaStore.Audio.Albums.CONTENT_TYPE.equals(mimeType)) {
@@ -361,20 +360,12 @@ public class MainActivity extends AbsSlidingMusicPanelActivity {
         return false;
     }
 
-    public boolean isNotScanning() {
-        return !scanning;
-    }
-
-    public void setScanning(boolean scanning) {
-        this.scanning = scanning;
-    }
-
     private void showChangelog() {
         try {
             PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
             int currentVersion = pInfo.versionCode;
             if (currentVersion != PreferenceUtil.getInstance().getLastChangelogVersion()) {
-                ChangelogDialog.create().show(getSupportFragmentManager(), "CHANGE_LOG_DIALOG");
+                new ChangelogDialog.Builder(this).show();
             }
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
@@ -388,4 +379,8 @@ public class MainActivity extends AbsSlidingMusicPanelActivity {
     public interface MainActivityFragmentCallbacks {
         boolean handleBackPress();
     }
+
+    @Override
+    @ColorInt
+    public int getPaletteColor() {return ThemeStore.primaryColor(this);}
 }

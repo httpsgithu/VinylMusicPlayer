@@ -1,25 +1,25 @@
 package com.poupa.vinylmusicplayer.helper;
 
+import android.os.Handler;
 import android.view.MotionEvent;
 import android.view.View;
-import android.os.Handler;
 
 public class PrevNextButtonOnTouchListener implements View.OnTouchListener {
-    private final Handler handler = new Handler();
+    final Handler handler = new Handler();
 
     private static final int SKIP_TRIGGER_INITIAL_INTERVAL_MILLIS = 1000;
     private static final int SKIP_TRIGGER_NORMAL_INTERVAL_MILLIS = 250;
 
-    private final int PLAYBACK_SKIP_AMOUNT_MILLI = 3500;
+    private static final int PLAYBACK_SKIP_AMOUNT_MILLI = 3500;
 
-    private final View.OnGenericMotionListener genericMotionListener;
-    private View touchedView;
-    private boolean wasHeld;
+    final View.OnGenericMotionListener genericMotionListener;
+    View touchedView;
+    boolean wasHeld;
 
     public static final int DIRECTION_NEXT = 1;
     public static final int DIRECTION_PREVIOUS = 2;
 
-    private final Runnable handlerRunnable = new Runnable() {
+    final Runnable handlerRunnable = new Runnable() {
         @Override
         public void run() {
             if(touchedView.isEnabled()) {
@@ -52,9 +52,9 @@ public class PrevNextButtonOnTouchListener implements View.OnTouchListener {
                             return true;
                         case MotionEvent.ACTION_CANCEL:
                             if (direction ==  DIRECTION_NEXT) {
-                                MusicPlayerRemote.playNextSong();
+                                MusicPlayerRemote.playNextSong(true);
                             } else if (direction ==  DIRECTION_PREVIOUS) {
-                                MusicPlayerRemote.back();
+                                MusicPlayerRemote.back(true);
                             }
                             return true;
                     }

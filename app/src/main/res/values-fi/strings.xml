@@ -108,6 +108,7 @@
     <string name="pref_header_colors">Värit</string>
     <string name="pref_header_now_playing_screen">Toistetaan parhaillaan</string>
     <string name="pref_title_general_theme">Yleinen teema</string>
+    <string name="pref_header_album">Albumi</string>
     <string name="pref_header_audio">Ääni</string>
     <string name="pref_header_library">Kirjasto</string>
     <string name="pref_header_images">Kuvat</string>
@@ -115,11 +116,11 @@
     <string name="pref_header_playlists">Soittolistat</string>
     <string name="pref_header_notification">Ilmoitukset</string>
     <string name="pref_title_navigation_bar">Värillinen navigointipalkki</string>
-    <string name="pref_title_album_art_on_lockscreen">Näytä albumin kansi</string>
+<!--    <string name="pref_title_album_art_on_lockscreen">Näytä albumin kansi</string>-->
     <string name="pref_title_auto_download_metadata">Metatietojen automaattinen lataus</string>
-    <string name="pref_title_blurred_album_art">Sumenna albumin kansi</string>
+<!--    <string name="pref_title_blurred_album_art">Sumenna albumin kansi</string>-->
     <string name="pref_title_colored_notification">Värillinen ilmoitus</string>
-    <string name="pref_title_ignore_media_store_artwork">Sivuuta Media Storen albumikannet</string>
+<!--    <string name="pref_title_ignore_media_store_artwork">Sivuuta Media Storen albumikannet</string>-->
     <string name="pref_title_gapless_playback">Tauoton toisto</string>
     <string name="pref_title_audio_ducking">Hiljennä ääntä, kun kohdistus menetetään</string>
     <string name="pref_title_last_added_interval">Viimeksi lisätyt -soittolistan aikaväli</string>
@@ -147,11 +148,11 @@
     <string name="empty">Tyhjä</string>
     <string name="playlist_name_empty">Soittolistan nimi</string>
     <string name="song">Kappale</string>
-    <string name="pref_summary_album_art_on_lockscreen">Käyttää tämänhetkisen kappaleen albumin kantta lukitusnäytön taustakuvana</string>
-    <string name="pref_summary_blurred_album_art">Sumentaa albumin kannen lukitusnäytöllä. Saattaa aiheuttaa ongelmia kolmannen osapuolen sovellusten ja widgettien kanssa.</string>
+<!--    <string name="pref_summary_album_art_on_lockscreen">Käyttää tämänhetkisen kappaleen albumin kantta lukitusnäytön taustakuvana</string>-->
+<!--    <string name="pref_summary_blurred_album_art">Sumentaa albumin kannen lukitusnäytöllä. Saattaa aiheuttaa ongelmia kolmannen osapuolen sovellusten ja widgettien kanssa.</string>-->
     <string name="pref_summary_colored_notification">"V\u00e4ritt\u00e4\u00e4 ilmoituksen albumin eloisalla v\u00e4rill\u00e4"</string>
     <string name="pref_summary_gapless_playback">"Saattaa aiheuttaa toisto-ongelmia joillain laitteilla"</string>
-    <string name="pref_summary_ignore_media_store_artwork">Saattaa nostaa albumin kannen laatua, mutta aiheuttaa hitaampaa kuvien latausaikaa. Käytä tätä vain, jos sinulla on ongelmia huonolaatuisten taideteosten kanssa.</string>
+<!--    <string name="pref_summary_ignore_media_store_artwork">Saattaa nostaa albumin kannen laatua, mutta aiheuttaa hitaampaa kuvien latausaikaa. Käytä tätä vain, jos sinulla on ongelmia huonolaatuisten taideteosten kanssa.</string>-->
     <string name="pref_summary_colored_navigation_bar">Värittää navigointipalkin ensisijaisella värillä</string>
     <string name="pref_summary_audio_ducking">Ilmoitukset, liikkuminen jne.</string>
     <string name="pref_summary_synchronized_lyrics_show">Nykyiseltään sovellus tukee vain LRC-muodossa olevia sanoituksia, joko sulautettuna tai erillisinä tiedostoina</string>
@@ -175,6 +176,7 @@
     <string name="new_playlist_title">Uusi soittolista</string>
     <string name="colored_footers">Värilliset alatunnisteet</string>
     <string name="special_thanks_to">Erikoiskiitokset</string>
+    <string name="show_footer">näytä alatunniste</string>
     <string name="changelog">Muutosloki</string>
     <string name="licenses">Lisenssit</string>
     <string name="permissions_denied">Sinulla ei ole oikeuksia tähän.</string>

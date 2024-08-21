@@ -1,6 +1,9 @@
 package com.poupa.vinylmusicplayer.adapter.song;
 
+import android.graphics.Color;
 import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.MenuItem;
@@ -26,13 +29,14 @@ import com.poupa.vinylmusicplayer.R;
 import com.poupa.vinylmusicplayer.databinding.ItemGridBinding;
 import com.poupa.vinylmusicplayer.databinding.ItemListBinding;
 import com.poupa.vinylmusicplayer.helper.MusicPlayerRemote;
-import com.poupa.vinylmusicplayer.interfaces.CabHolder;
+import com.poupa.vinylmusicplayer.interfaces.PaletteColorHolder;
 import com.poupa.vinylmusicplayer.misc.queue.IndexedSong;
 import com.poupa.vinylmusicplayer.model.Song;
+import com.poupa.vinylmusicplayer.ui.activities.base.AbsThemeActivity;
 import com.poupa.vinylmusicplayer.util.PlayingSongDecorationUtil;
 import com.poupa.vinylmusicplayer.util.ViewUtil;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Karim Abou Zeid (kabouzeid)
@@ -46,12 +50,12 @@ public class PlayingQueueAdapter extends SongAdapter
 
     public IndexedSong songToRemove;
 
-    private static Snackbar currentlyShownSnackbar;
+    static Snackbar currentlyShownSnackbar;
 
     private int current;
 
-    public PlayingQueueAdapter(AppCompatActivity activity, ArrayList<Song> dataSet, int current, boolean usePalette, @Nullable CabHolder cabHolder) {
-        super(activity, dataSet, R.layout.item_list, usePalette, cabHolder);
+    public PlayingQueueAdapter(@NonNull final AbsThemeActivity activity, List<? extends Song> dataSet, int current, boolean usePalette, @Nullable PaletteColorHolder palette) {
+        super(activity, dataSet, R.layout.item_list, usePalette, palette);
         this.showAlbumImage = false; // We don't want to load it in this adapter
         this.current = current;
     }
@@ -98,7 +102,7 @@ public class PlayingQueueAdapter extends SongAdapter
         return CURRENT;
     }
 
-    public void swapDataSet(ArrayList<Song> dataSet, int position) {
+    public void swapDataSet(List<? extends Song> dataSet, int position) {
         this.dataSet = dataSet;
         current = position;
         notifyDataSetChanged();
@@ -193,7 +197,13 @@ public class PlayingQueueAdapter extends SongAdapter
 
     @Override
     public void onSetSwipeBackground(ViewHolder holder, int i, int i1) {
-        holder.itemView.setBackgroundColor(getBackgroundColor(activity));
+        Integer color = getBackgroundColor(activity);
+
+        if (color != null) {
+            holder.itemView.setBackgroundColor(color);
+        } else {
+            holder.itemView.setBackgroundColor(ATHUtil.resolveColor(activity, R.attr.cardBackgroundColor));
+        }
         holder.dummyContainer.setBackgroundColor(ATHUtil.resolveColor(activity, R.attr.cardBackgroundColor));
     }
 
@@ -278,17 +288,21 @@ public class PlayingQueueAdapter extends SongAdapter
         }
     }
 
-    public static int getBackgroundColor(AppCompatActivity activity){
-        //TODO: Find a better way to get the album background color
-        TextView tV = activity.findViewById(R.id.player_queue_sub_header);
-        if(tV != null){
-            return tV.getCurrentTextColor();
+    private static Integer getBackgroundColor(AppCompatActivity activity){
+        View view = activity.findViewById(R.id.color_background); // cardPlayerFragment
+        if (view == null) {
+            view = activity.findViewById(R.id.player_status_bar); // flatPlayerFragment
+        }
+
+        Drawable background = view.getBackground();
+        if (background instanceof ColorDrawable) {
+            return ((ColorDrawable) background).getColor();
         } else {
-            return ATHUtil.resolveColor(activity, R.attr.cardBackgroundColor);
+            return null;
         }
     }
 
-    public static void initializeSnackBar(final PlayingQueueAdapter adapter,final int position,
+    static void initializeSnackBar(final PlayingQueueAdapter adapter,final int position,
                                           final AppCompatActivity activity,
                                           final boolean isPlayingSongToRemove) {
 
@@ -302,18 +316,26 @@ public class PlayingQueueAdapter extends SongAdapter
 
         songTitle.setSingleLine();
         songTitle.setEllipsize(TextUtils.TruncateAt.END);
-        songTitle.setText(adapter.dataSet.get(position).title + " " + snackBarTitle);
+        songTitle.setText(adapter.dataSet.get(position).getTitle() + " " + snackBarTitle);
 
+        Integer color = getBackgroundColor(activity);
+        if (color == null) {
+            if (ATHUtil.isWindowBackgroundDark(activity)) {
+                color = Color.BLACK;
+            } else {
+                color = Color.WHITE;
+            }
+        }
         snackbar.setAction(R.string.snack_bar_action_undo, v -> {
             MusicPlayerRemote.addSongBackTo(position, adapter.getSongToRemove());
             //If playing and currently playing song is removed, then added back, then play it at
             //current song progress
             if (isPlayingSongToRemove) {
-                MusicPlayerRemote.playSongAt(position);
+                MusicPlayerRemote.playSongAt(position, false);
             }
-        });
-        snackbar.setActionTextColor(getBackgroundColor(activity));
-        snackbar.show();
+        })
+        .setActionTextColor(color)
+        .show();
 
 
         //Fixes Snackbar not showing when it replaces another Snackbar
@@ -322,7 +344,7 @@ public class PlayingQueueAdapter extends SongAdapter
 
     }
 
-    private void setSongToRemove (@NonNull IndexedSong song){
+    void setSongToRemove (@NonNull IndexedSong song){
         songToRemove = song;
     }
 

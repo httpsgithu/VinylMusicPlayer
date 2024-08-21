@@ -1,6 +1,5 @@
 package com.poupa.vinylmusicplayer.helper;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.ContentResolver;
@@ -10,27 +9,32 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Environment;
 import android.os.IBinder;
 import android.provider.DocumentsContract;
 import android.text.TextUtils;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.poupa.vinylmusicplayer.R;
+import com.poupa.vinylmusicplayer.dialogs.BottomSheetDialog.BottomSheetDialogWithButtons;
 import com.poupa.vinylmusicplayer.discog.Discography;
 import com.poupa.vinylmusicplayer.misc.queue.IndexedSong;
 import com.poupa.vinylmusicplayer.model.Song;
+import com.poupa.vinylmusicplayer.preferences.SongConfirmationPreference;
 import com.poupa.vinylmusicplayer.service.MusicService;
 import com.poupa.vinylmusicplayer.util.PreferenceUtil;
+import com.poupa.vinylmusicplayer.util.SafeToast;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.WeakHashMap;
 
@@ -53,14 +57,13 @@ public class MusicPlayerRemote {
             realActivity = (Activity) context;
         }
 
-        final ContextWrapper contextWrapper = new ContextWrapper(realActivity);
-        contextWrapper.startService(new Intent(contextWrapper, MusicService.class));
+        ContextCompat.startForegroundService(realActivity, new Intent(realActivity, MusicService.class));
 
         final ServiceBinder binder = new ServiceBinder(callback);
 
-        if (contextWrapper.bindService(new Intent().setClass(contextWrapper, MusicService.class), binder, Context.BIND_AUTO_CREATE)) {
-            mConnectionMap.put(contextWrapper, binder);
-            return new ServiceToken(contextWrapper);
+        if (realActivity.bindService(new Intent().setClass(realActivity, MusicService.class), binder, Context.BIND_AUTO_CREATE)) {
+            mConnectionMap.put(realActivity, binder);
+            return new ServiceToken(realActivity);
         }
         return null;
     }
@@ -75,7 +78,7 @@ public class MusicPlayerRemote {
             return;
         }
         mContextWrapper.unbindService(mBinder);
-        if (mConnectionMap.isEmpty()) {
+        if (mConnectionMap.isEmpty() && musicService != null) {
             if (!musicService.isPlaying()) {
                 musicService.quit();
             }
@@ -119,9 +122,9 @@ public class MusicPlayerRemote {
     /**
      * Async
      */
-    public static void playSongAt(final int position) {
+    public static void playSongAt(final int position, boolean skippedLast) {
         if (musicService != null) {
-            musicService.playSongAt(position);
+            musicService.playSongAt(position, skippedLast);
         }
     }
 
@@ -143,27 +146,27 @@ public class MusicPlayerRemote {
     /**
      * Async
      */
-    public static void playNextSong() {
+    public static void playNextSong(boolean skippedLast) {
         if (musicService != null) {
-            musicService.playNextSong(true);
+            musicService.playNextSong(skippedLast);
         }
     }
 
     /**
      * Async
      */
-    public static void playPreviousSong() {
+    public static void playPreviousSong(boolean skippedLast) {
         if (musicService != null) {
-            musicService.playPreviousSong(true);
+            musicService.playPreviousSong(skippedLast);
         }
     }
 
     /**
      * Async
      */
-    public static void back() {
+    public static void back(boolean skippedLast) {
         if (musicService != null) {
-            musicService.back(true);
+            musicService.back(skippedLast);
         }
     }
 
@@ -184,31 +187,113 @@ public class MusicPlayerRemote {
     /**
      * Async
      */
-    public static void openQueue(final ArrayList<Song> queue, final int startPosition, final boolean startPlaying) {
+    public static void openQueue(@NonNull final Collection<? extends Song> queue, final int startPosition, final boolean startPlaying) {
         if (!tryToHandleOpenPlayingQueue(queue, startPosition, startPlaying) && musicService != null) {
-            musicService.openQueue(queue, startPosition, startPlaying);
-            if (!PreferenceUtil.getInstance().rememberShuffle()){
+            if (!PreferenceUtil.getInstance().rememberShuffle()) {
                 setShuffleMode(MusicService.SHUFFLE_MODE_NONE);
             }
+            musicService.openQueue(queue, startPosition, startPlaying);
         }
     }
 
     /**
      * Async
      */
-    public static void openAndShuffleQueue(final ArrayList<Song> queue, boolean startPlaying) {
+    public static void openAndShuffleQueue(final List<? extends Song> queue, boolean startPlaying) {
         if (!tryToHandleOpenPlayingQueue(queue, 0, startPlaying) && musicService != null) {
             musicService.openQueue(queue, MusicService.RANDOM_START_POSITION_ON_SHUFFLE, startPlaying, MusicService.SHUFFLE_MODE_SHUFFLE);
         }
     }
 
-    private static boolean tryToHandleOpenPlayingQueue(final ArrayList<Song> queue, final int startPosition, final boolean startPlaying) {
-        if (getPlayingQueue() == queue) {
-            if (startPlaying) {
-                playSongAt(startPosition);
-            } else {
-                setPosition(startPosition);
+    private static void removeDuplicateBeforeQueuing (final Song song) {
+        removeDuplicateBeforeQueuing(Collections.singletonList(song));
+    }
+
+    private static void removeDuplicateBeforeQueuing (final Collection<? extends Song> songsToAdd) {
+        // Deduplicate songs, favoring the occurrences in the new queue
+        if (musicService == null) {return;}
+        
+        final List<? extends Song> currentQueue = musicService.getPlayingQueue();
+        if (currentQueue.isEmpty()) {
+            return;
+        }
+
+        final List<? extends Song> remainingSongsInQueue = currentQueue.subList(
+                musicService.getPosition() + 1,
+                currentQueue.size()
+        );
+
+        final ArrayList<Song> songsToRemove = new ArrayList<>();
+        for (final Song song : remainingSongsInQueue) {
+            // Dont use List.contains or Song.equals
+            // since the current queue hosts IndexedSongs, not equal-comparable to Song objects
+            for (final Song songToAdd : songsToAdd) {
+                if (song.isQuickEqual(songToAdd)) {
+                    songsToRemove.add(song);
+                    break;
+                }
             }
+        }
+
+        musicService.removeSongs(songsToRemove);
+    }
+
+    public static void enqueueSongsWithConfirmation(final @NonNull Context context, final List<? extends Song> queue, int positionInQueue) {
+        if (musicService == null) {return;}
+
+        if (tryToHandleOpenPlayingQueue(queue, positionInQueue, true)) {
+            // User is just switching songs in the current playing queue, nothing more to do
+            return;
+        }
+
+        final List<? extends Song> currentQueue = musicService.getPlayingQueue();
+        if (currentQueue.isEmpty()) {
+            openQueue(queue, positionInQueue, true);
+            return;
+        }
+
+        // If one tapped on the very first element of History queue, the positionInQueue will be -1
+        final int adjustedPosition = Math.max(positionInQueue, 0);
+        final ArrayList<Song> songsToAdd = new ArrayList<>(queue.subList(adjustedPosition, queue.size()));
+
+        final List<BottomSheetDialogWithButtons.ButtonInfo> possibleActions = Arrays.asList(
+                SongConfirmationPreference.REPLACE.setAction(() -> {
+                    openQueue(queue, positionInQueue, true);
+                }),
+                SongConfirmationPreference.NEXT.setAction(() -> {
+                    playNext(songsToAdd);
+                }),
+                SongConfirmationPreference.ADD.setAction(() -> {
+                    enqueue(songsToAdd);
+                })
+        );
+
+        final int songCount = songsToAdd.size();
+        final String message = (songCount == 1)
+                ? context.getResources().getString(R.string.about_to_add_title_to_playing_queue)
+                : context.getResources().getString(R.string.about_to_add_x_titles_to_playing_queue, songCount);
+
+        int defaultChoice = PreferenceUtil.getInstance().getEnqueueSongsDefaultChoice();
+        if (defaultChoice == PreferenceUtil.ENQUEUE_SONGS_CHOICE_ASK) {
+            BottomSheetDialogWithButtons songActionDialog = BottomSheetDialogWithButtons.newInstance();
+            songActionDialog.setTitle(message)
+                    .setButtonList(possibleActions)
+                    .show(((AppCompatActivity) context).getSupportFragmentManager(),
+                            "songActionDialog");
+        } else {
+            for (BottomSheetDialogWithButtons.ButtonInfo action: possibleActions) {
+                if (defaultChoice == action.id) {
+                    action.action.run();
+                }
+            }
+        }
+
+    }
+
+    private static boolean tryToHandleOpenPlayingQueue(final Collection<? extends Song> queue, final int startPosition, final boolean startPlaying) {
+        if (getPlayingQueue() == queue) {
+            if (startPlaying) {playSongAt(startPosition, isPlaying());}
+            else {setPosition(startPosition);}
             return true;
         }
         return false;
@@ -222,13 +307,6 @@ public class MusicPlayerRemote {
         return Song.EMPTY_SONG;
     }
 
-    public static IndexedSong getCurrentIndexedSong() {
-        if (musicService != null) {
-            return musicService.getCurrentIndexedSong();
-        }
-        return IndexedSong.EMPTY_INDEXED_SONG;
-    }
-
     public static int getPosition() {
         if (musicService != null) {
             return musicService.getPosition();
@@ -236,7 +314,7 @@ public class MusicPlayerRemote {
         return -1;
     }
 
-    public static ArrayList<Song> getPlayingQueue() {
+    public static List<? extends Song> getPlayingQueue() {
         if (musicService != null) {
             return musicService.getPlayingQueue();
         }
@@ -289,7 +367,7 @@ public class MusicPlayerRemote {
         }
     }
 
-    public static void setShuffleMode(final int shuffleMode) {
+    private static void setShuffleMode(final int shuffleMode) {
         if (musicService != null) {
             musicService.setShuffleMode(shuffleMode);
         }
@@ -297,51 +375,57 @@ public class MusicPlayerRemote {
 
     public static void playNext(Song song) {
         if (musicService != null) {
-            if (getPlayingQueue().size() > 0) {
+            if (!getPlayingQueue().isEmpty()) {
+                removeDuplicateBeforeQueuing(song);
                 musicService.addSongAfter(getPosition(), song);
             } else {
                 ArrayList<Song> queue = new ArrayList<>();
                 queue.add(song);
                 openQueue(queue, 0, false);
             }
-            Toast.makeText(musicService, musicService.getResources().getString(R.string.added_title_to_playing_queue), Toast.LENGTH_SHORT).show();
+            SafeToast.show(musicService, musicService.getResources().getString(R.string.added_title_to_playing_queue));
         }
     }
 
-    public static void playNext(@NonNull ArrayList<Song> songs) {
+    public static void playNext(@NonNull Collection<? extends Song> songs) {
         if (musicService != null) {
-            if (getPlayingQueue().size() > 0) {
+            if (!getPlayingQueue().isEmpty()) {
+                removeDuplicateBeforeQueuing(songs);
                 musicService.addSongsAfter(getPosition(), songs);
             } else {
                 openQueue(songs, 0, false);
             }
-            final String toast = songs.size() == 1 ? musicService.getResources().getString(R.string.added_title_to_playing_queue) : musicService.getResources().getString(R.string.added_x_titles_to_playing_queue, songs.size());
-            Toast.makeText(musicService, toast, Toast.LENGTH_SHORT).show();
+            final String toast = (songs.size() == 1)
+                    ? musicService.getResources().getString(R.string.added_title_to_playing_queue)
+                    : musicService.getResources().getString(R.string.added_x_titles_to_playing_queue, songs.size());
+            SafeToast.show(musicService, toast);
         }
     }
 
     public static void enqueue(Song song) {
         if (musicService != null) {
-            if (getPlayingQueue().size() > 0) {
+            if (!getPlayingQueue().isEmpty()) {
+                removeDuplicateBeforeQueuing(song);
                 musicService.addSong(song);
             } else {
                 ArrayList<Song> queue = new ArrayList<>();
                 queue.add(song);
                 openQueue(queue, 0, false);
             }
-            Toast.makeText(musicService, musicService.getResources().getString(R.string.added_title_to_playing_queue), Toast.LENGTH_SHORT).show();
+            SafeToast.show(musicService, musicService.getResources().getString(R.string.added_title_to_playing_queue));
         }
     }
 
-    public static void enqueue(@NonNull ArrayList<Song> songs) {
+    public static void enqueue(@NonNull final Collection<? extends Song> songs) {
         if (musicService != null) {
-            if (getPlayingQueue().size() > 0) {
+            if (!getPlayingQueue().isEmpty()) {
+                removeDuplicateBeforeQueuing(songs);
                 musicService.addSongs(songs);
             } else {
                 openQueue(songs, 0, false);
             }
             final String toast = songs.size() == 1 ? musicService.getResources().getString(R.string.added_title_to_playing_queue) : musicService.getResources().getString(R.string.added_x_titles_to_playing_queue, songs.size());
-            Toast.makeText(musicService, toast, Toast.LENGTH_SHORT).show();
+            SafeToast.show(musicService, toast);
         }
     }
 
@@ -358,14 +442,15 @@ public class MusicPlayerRemote {
     }
 
     public static IndexedSong getIndexedSongAt(int position) {
-        if (musicService != null && position >= 0 && position < getPlayingQueue().size()) {
+        if (musicService != null) {
             return musicService.getIndexedSongAt(position);
         }
         return IndexedSong.EMPTY_INDEXED_SONG;
     }
 
     public static void moveSong(int from, int to) {
-        if (musicService != null && from >= 0 && to >= 0 && from < getPlayingQueue().size() && to < getPlayingQueue().size()) {
+        final int size = getPlayingQueue().size();
+        if (musicService != null && from >= 0 && to >= 0 && from < size && to < size) {
             musicService.moveSong(from, to);
         }
     }
@@ -438,7 +523,7 @@ public class MusicPlayerRemote {
             }
 
             if (!song.equals(Song.EMPTY_SONG)) {
-                openQueue(new ArrayList<>(Arrays.asList(song)), 0, true);
+                openQueue(new ArrayList<>(List.of(song)), 0, true);
             } else {
                 Log.e(TAG, "No song found for URI: " + uri);
             }
@@ -470,7 +555,6 @@ public class MusicPlayerRemote {
         return null;
     }
 
-    @TargetApi(Build.VERSION_CODES.KITKAT)
     private static String getSongIdFromMediaProvider(Uri uri) {
         return DocumentsContract.getDocumentId(uri).split(":")[1];
     }
